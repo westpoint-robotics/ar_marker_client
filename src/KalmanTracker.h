@@ -10,7 +10,7 @@
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Twist.h"
-#include "marker_tracker/KalmanConfig.h"
+#include "ar_marker_client/KalmanConfig.h"
 #include "std_msgs/Int16.h"
 
 
