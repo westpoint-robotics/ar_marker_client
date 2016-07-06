@@ -10,7 +10,7 @@
     <arg name="namespace" default="euroc3" />
 
     
-    <node name="ar_track_ctl_node" pkg="marker_tracker" type="ar_track_node_ctl.py" ns="$(arg namespace)">
+    <node name="ar_track_ctl_node" pkg="ar_marker_client" type="ar_track_node_ctl.py" ns="$(arg namespace)">
         <param name="marker_size" value="$(arg marker_size)"/>
         <param name="max_new_marker_error" value="$(arg max_new_marker_error)"/>
         <param name="max_track_error" value="$(arg max_track_error)"/>

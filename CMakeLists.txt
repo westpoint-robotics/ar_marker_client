@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(marker_tracker)
+project(ar_marker_client)
 
 find_package(catkin REQUIRED COMPONENTS roscpp ar_track_alvar geometry_msgs dynamic_reconfigure)
 

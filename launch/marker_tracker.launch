@@ -3,7 +3,7 @@
     <arg name="marker_id_target" default="11"/>
     <arg name="namespace" default="euroc" />
 	
-	<node name="marker_tracker" pkg="marker_tracker" type="marker_tracker_node" ns="$(arg namespace)" >
+	<node name="ar_marker_client" pkg="ar_marker_client" type="marker_tracker_node" ns="$(arg namespace)" >
 	    <param name="marker_id_target" value="$(arg marker_id_target)"/>
     </node>
 	

@@ -8,7 +8,7 @@
     <arg name="max_delay" default="0.3"/>
     <arg name="namespace" default="kalman" />
 
-    <node name="kalman_tracker" pkg="marker_tracker" type="kalman_tracker_node" output="screen">
+    <node name="kalman_tracker" pkg="ar_marker_client" type="kalman_tracker_node" output="screen">
     	<param name="target_id" value="$(arg target_id)"/>
     	<param name="rate" value="$(arg rate)"/>
     	<param name="pos_noise" value="$(arg pos_noise)"/> 

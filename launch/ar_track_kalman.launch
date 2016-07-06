@@ -8,11 +8,11 @@
     <arg name="output_frame" default="/usb_cam" />
     <arg name="namespace" default="euroc"/>
     
-     <include file="$(find marker_tracker)/launch/usb_cam.launch"/>
+     <include file="$(find ar_marker_client)/launch/usb_cam.launch"/>
     
     <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)"/>
     
-    <include file="$(find marker_tracker)/launch/kalman_tracker.launch">
+    <include file="$(find ar_marker_client)/launch/kalman_tracker.launch">
         <param name="target_id" value="$(arg target_id)"/>
     </include>
     
