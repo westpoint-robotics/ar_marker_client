@@ -4,19 +4,15 @@ import roslib
 import rospy
 from sensor_msgs.msg import CameraInfo
 import yaml
-
-cam_info_publisher = None
-cam_info_msg = None
-
-def cam_info_callback(msg):
-	cam_info_msg.header = msg.header
-	cam_info_publisher.publish(cam_info_msg)
+import rospkg
 
 if __name__ == '__main__':
     
     rospy.init_node('cam_info_publisher')
+
+    rospack = rospkg.RosPack()
     
-    inputYaml = open('/home/thaus/.ros/camera_info/00b09d0100cd42b4.yaml', 'r')
+    inputYaml = open(rospack.get_path('ar_marker_client') + '/cfg/euroc3_cam3.yaml', 'r')
     yamlData = yaml.load(inputYaml)
     inputYaml.close()
     
@@ -29,9 +25,11 @@ if __name__ == '__main__':
     cam_info_msg.P = yamlData['projection_matrix']['data']
     cam_info_msg.K = yamlData['camera_matrix']['data']  
     
-    cam_info_sub = rospy.Subscriber('/camera/camera_info', CameraInfo, cam_info_callback)
-    cam_info_publisher = rospy.Publisher('/chameleon/camera_info', CameraInfo)
+    cam_info_publisher = rospy.Publisher('/euroc3/cam3_info', CameraInfo, queue_size=5)
     
     while not rospy.is_shutdown():
-		rospy.spin()
+        rospy.sleep(0.1)
+        cam_info_msg.header.stamp = rospy.Time.now()
+        cam_info_msg.header.frame_id  = 'cam3'
+    	cam_info_publisher.publish(cam_info_msg)
 
