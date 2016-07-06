@@ -1,0 +1,20 @@
+<launch>
+    <arg name="marker_size" default="10" />
+    <arg name="target_id" default="5" />
+    <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
+    <arg name="max_track_error" default="1" />  <!--0.2 -->
+    <arg name="cam_image_topic" default="/usb_cam/image_rect" />
+    <arg name="cam_info_topic" default="/usb_cam/camera_info" />	
+    <arg name="output_frame" default="/usb_cam" />
+    <arg name="namespace" default="euroc3" />
+
+    <include file="$(find marker_tracker)/launch/usb_cam.launch"/>
+    
+    <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" ns="$(arg namespace)" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)"/>
+    
+    <!--include file="$(find marker_tracker)/launch/marker_tracker.launch">
+        <arg name="marker_id_target" value="$(arg target_id)"/>
+        <arg name="namespace" value="$(arg namespace)"/>
+    </include-->
+   
+</launch>

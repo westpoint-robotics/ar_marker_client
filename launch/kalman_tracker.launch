@@ -1,0 +1,20 @@
+<launch>
+	
+    <arg name="target_id" default="5"/>
+    <arg name="rate" default="30"/>
+    <arg name="pos_noise" default="10"/>
+    <arg name="vel_noise" default="250"/>
+    <arg name="measure_noise" default="500"/>
+    <arg name="max_delay" default="0.3"/>
+    <arg name="namespace" default="kalman" />
+
+    <node name="kalman_tracker" pkg="marker_tracker" type="kalman_tracker_node" output="screen">
+    	<param name="target_id" value="$(arg target_id)"/>
+    	<param name="rate" value="$(arg rate)"/>
+    	<param name="pos_noise" value="$(arg pos_noise)"/> 
+    	<param name="vel_noise" value="$(arg vel_noise)"/>
+    	<param name="measure_noise" value="$(arg measure_noise)"/>
+        <param name="max_delay" value="$(arg max_delay)"/>
+    </node>
+	
+</launch>

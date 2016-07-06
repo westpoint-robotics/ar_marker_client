@@ -1,0 +1,9 @@
+<launch>
+    
+    <node pkg="camera1394" type="camera1394_node" name="camera1394_node" respawn="false" output="screen">
+            <param name="video_mode" value="640x480_mono8"/>
+            <param name="frame_rate" value="30" />      
+    </node>
+    
+    <node ns="camera" pkg="image_proc" type="image_proc" name="image_proc" output="screen" />
+</launch>
