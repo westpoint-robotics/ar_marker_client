@@ -1,0 +1,23 @@
+<launch>
+    <arg name="marker_size" default="5" />
+    <arg name="target_id" default="5" />
+    <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
+    <arg name="max_track_error" default="1" />  <!--0.2 -->
+    <arg name="cam_image_topic" default="/euroc3/cam3/image_rect" />
+    <arg name="cam_info_topic" default="/euroc3/cam3/camera_info" />	
+    <arg name="output_frame" default="cam0" />
+    <arg name="namespace" default="euroc3" />
+    
+    <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" ns="$(arg namespace)" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)"/>
+
+    <node name="cam_info_pub" pkg="ar_marker_client" respawn="false" output="screen" type="cam_info_publisher.py" />
+    
+    <include file="$(find ar_marker_client)/launch/kalman_tracker.launch">
+        <arg name="target_id" value="$(arg target_id)"/>
+        <arg name="namespace" value="$(arg namespace)"/>
+    </include>
+   
+    <node pkg="image_proc" type="image_proc" name="image_proc" ns="/euroc3/cam3" output="screen" >  
+    </node>
+
+</launch>
