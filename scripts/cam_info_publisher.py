@@ -2,9 +2,19 @@
 
 import roslib
 import rospy
-from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import CameraInfo, Image
 import yaml
 import rospkg
+
+cam_info_publisher = None
+cam_info_msg = None
+
+def image_sub(msg):
+    global cam_info_publisher
+    global cam_info_msg
+    cam_info_msg.header = msg.header
+    cam_info_publisher.publish(cam_info_msg)
+    
 
 if __name__ == '__main__':
     
@@ -25,11 +35,12 @@ if __name__ == '__main__':
     cam_info_msg.P = yamlData['projection_matrix']['data']
     cam_info_msg.K = yamlData['camera_matrix']['data']  
     
-    cam_info_publisher = rospy.Publisher('/euroc3/cam3_info', CameraInfo, queue_size=5)
+    cam_info_publisher = rospy.Publisher('/euroc3/cam3/info', CameraInfo, queue_size=5)
+    img_sub = rospy.Subscriber('/euroc3/cam3/image_raw', Image, image_sub)
     
     while not rospy.is_shutdown():
-        rospy.sleep(0.1)
-        cam_info_msg.header.stamp = rospy.Time.now()
-        cam_info_msg.header.frame_id  = 'cam3'
-    	cam_info_publisher.publish(cam_info_msg)
+        rospy.sleep(0.01)
+        #cam_info_msg.header.stamp = rospy.Time.now()
+        #cam_info_msg.header.frame_id  = 'cam0'
+    	#cam_info_publisher.publish(cam_info_msg)
 

@@ -19,7 +19,7 @@ class NodeCtl:
 
         self.rate = rospy.Rate(10)
 
-        rospy.Subscriber('mission_state', Int16, self.mission_state_cb)
+        rospy.Subscriber('pack_track_state', Int16, self.mission_state_cb)
 
         signal.signal(signal.SIGINT, self.exit_cb)
         signal.signal(signal.SIGTERM, self.exit_cb)
@@ -31,8 +31,11 @@ class NodeCtl:
         self.package_ar = 'ar_track_alvar'
         self.exe_ar = 'individualMarkersNoKinect'
 
-        self.package_mt = 'marker_tracker'
+        self.package_mt = 'ar_marker_client'
         self.exe_mt = 'marker_tracker_node'
+
+        self.package_ci = 'ar_marker_client'
+        self.exe_ci = 'cam_info_publisher.py'
 
         self.marker_size = rospy.get_param('~marker_size')
         self.max_new_marker_error = rospy.get_param('~max_new_marker_error')
@@ -56,10 +59,17 @@ class NodeCtl:
         self.launch_mt = roslaunch.scriptapi.ROSLaunch()
         self.launch_mt.start()
 
+
+        self.node_ci = roslaunch.core.Node(package=self.package_ci, node_type=self.exe_ci, name='cam_info_pub',
+                                           namespace=rospy.get_namespace())
+        self.launch_ci = roslaunch.scriptapi.ROSLaunch()
+        self.launch_ci.start()
+
         self.first_start = True
 
         self.process_ar_track = 0
         self.process_mt = 0
+        self.process_ci = 0
 
     def mission_state_cb(self, msg):
 
@@ -91,13 +101,16 @@ class NodeCtl:
                     if self.first_start:
                         self.process_ar_track = self.launch_ar_track.launch(self.node_ar_track)
                         self.process_mt = self.launch_mt.launch(self.node_mt)
+                        self.process_ci = self.launch_ci.launch(self.node_ci)
                         self.first_start = False
                     else:
                         self.process_ar_track.start()
                         self.process_mt.start()
+                        self.process_ci.start()
                 else:
                     self.process_ar_track.stop()
                     self.process_mt.stop()
+                    self.process_ci.stop()
 
                 self.ar_track_state_old = self.ar_track_state
 

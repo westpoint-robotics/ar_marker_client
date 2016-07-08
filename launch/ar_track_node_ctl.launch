@@ -1,11 +1,10 @@
 <launch>
-    <arg name="marker_size" default="10" />
-    <arg name="target_id" default="5" />
+    <arg name="marker_size" default="5" />
     <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
     <arg name="max_track_error" default="1" />  <!--0.2 -->
-    <arg name="cam_image_topic" default="/usb_cam/image_rect" />
-    <arg name="cam_info_topic" default="/usb_cam/camera_info" />	
-    <arg name="output_frame" default="/usb_cam" />
+    <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
+    <arg name="cam_info_topic" default="/euroc3/cam3/info" />
+    <arg name="output_frame" default="cam0" />
     <arg name="package_id" default="5" />
     <arg name="namespace" default="euroc3" />
 
@@ -17,7 +16,7 @@
         <param name="cam_image_topic" value="$(arg cam_image_topic)"/>
         <param name="cam_info_topic" value="$(arg cam_info_topic)"/>
         <param name="output_frame" value="$(arg output_frame)"/>
-         <param name="package_id" value="$(arg package_id)"/>
+        <param name="package_id" value="$(arg package_id)"/>
     </node>
     
 </launch>

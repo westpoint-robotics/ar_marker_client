@@ -2,13 +2,13 @@
 	
     <arg name="target_id" default="5"/>
     <arg name="rate" default="30"/>
-    <arg name="pos_noise" default="10"/>
-    <arg name="vel_noise" default="250"/>
-    <arg name="measure_noise" default="500"/>
-    <arg name="max_delay" default="0.3"/>
+    <arg name="pos_noise" default="50"/>
+    <arg name="vel_noise" default="50"/>
+    <arg name="measure_noise" default="1"/>
+    <arg name="max_delay" default="0.1"/>
     <arg name="namespace" default="kalman" />
 
-    <node name="kalman_tracker" pkg="ar_marker_client" type="kalman_tracker_node" output="screen">
+    <node name="kalman_tracker" pkg="ar_marker_client" type="kalman_tracker_node" output="screen" ns="$(arg namespace)">
     	<param name="target_id" value="$(arg target_id)"/>
     	<param name="rate" value="$(arg rate)"/>
     	<param name="pos_noise" value="$(arg pos_noise)"/> 

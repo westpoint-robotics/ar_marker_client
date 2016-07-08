@@ -17,7 +17,7 @@
 class KalmanTracker
 {
 public:
-    KalmanTracker();
+    KalmanTracker(ros::NodeHandle nh);
     ~KalmanTracker();
 
     int target_id;

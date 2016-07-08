@@ -1,7 +1,7 @@
 #include "KalmanTracker.h"
 
 // constructor
-KalmanTracker::KalmanTracker()
+KalmanTracker::KalmanTracker(ros::NodeHandle n)
 {
     nh = ros::NodeHandle("~");
     pub_target_pose = nh.advertise<geometry_msgs::PoseStamped>("target_pose", 1);
@@ -9,7 +9,7 @@ KalmanTracker::KalmanTracker()
     pub_target_pose_f = nh.advertise<geometry_msgs::PoseStamped>("target_pose_f", 1);
     pub_target_vel_f = nh.advertise<geometry_msgs::TwistStamped>("target_vel_f", 1);
     pub_marker_found = nh.advertise<std_msgs::Int16>("marker_found", 1);
-    sub_marker = nh.subscribe("/ar_pose_marker", 1, &KalmanTracker::ar_track_alvar_sub, this);
+    sub_marker = nh.subscribe("/euroc3/ar_pose_marker", 1, &KalmanTracker::ar_track_alvar_sub, this);
 
     nh.param<int>("target_id", target_id, 7);
     nh.param<int>("rate", ros_rate, 30);
@@ -98,7 +98,7 @@ void KalmanTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
                 pub_target_pose.publish(marker.pose);
 
                 // compensate angles
-                marker.pose.pose = compensate_angles(marker.pose.pose);
+                //marker.pose.pose = compensate_angles(marker.pose.pose);
                 pos_m[0] = marker.pose.pose.position.x;
                 pos_m[1] = marker.pose.pose.position.y;
                 pos_m[2] = marker.pose.pose.position.z;

@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "kalman_tracker_node");
   ros::NodeHandle n;
 
-  ktracker = new KalmanTracker();
+  ktracker = new KalmanTracker(n);
 
   ktracker->params_call = boost::bind(params_callback, _1, _2);
   ktracker->server.setCallback(ktracker->params_call);
@@ -38,6 +38,7 @@ int main(int argc, char **argv)
   // Main loop.
   while (n.ok())
   {
+      rate.sleep();
       ros::spinOnce();
       // check if we received new measurements in last 0.35 sec
       if (ros::Time::now().toSec() - ktracker->time_old > ktracker->max_delay) {
@@ -71,8 +72,6 @@ int main(int argc, char **argv)
       vel_stmp.twist.linear.y = ktracker->y[1];
       vel_stmp.twist.linear.z = ktracker->z[1];
       ktracker->pub_target_vel_f.publish(vel_stmp);
-
-      rate.sleep();
   }
 
   delete ktracker;
