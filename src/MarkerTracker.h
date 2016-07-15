@@ -11,14 +11,17 @@
 #include "ros/ros.h"
 #include "ar_track_alvar_msgs/AlvarMarker.h"
 #include "ar_track_alvar_msgs/AlvarMarkers.h"
+#include <nav_msgs/Odometry.h>
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
+#include <eigen3/Eigen/Eigen>
 
 class MarkerTracker {
 public:
 	MarkerTracker();
 	virtual ~MarkerTracker();
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
+    void odometryCallback(const nav_msgs::Odometry &msg);
 
 	void setPubTargetPose(ros::Publisher pubTargetPose) {
 		pub_target_pose = pubTargetPose;
@@ -48,6 +51,7 @@ public:
 
     //int usv_id;
 	int target_id;
+	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose;
 };

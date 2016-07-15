@@ -9,11 +9,26 @@
 
 MarkerTracker::MarkerTracker() {
 	// TODO Auto-generated constructor stub
+	cam2UAV << 	0.0, -1.0, 0.0, -0.006, //-0.003 - ako se optitrack marker ne pomice
+				-1.0, 0.0, 0.0, 0.0231, //0.0231 - ako se optitrack marker ne pomice
+				0.0, 0.0, -1.0, -0.0818, //-0.1148 - ako se optitrack marker ne pomice
+				0.0, 0.0, 0.0, 1.0;
 
+	UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
+					   0.0, 1.0, 0.0, 0.0,
+					   0.0, 0.0, 1.0, 0.0,
+					   0.0, 0.0, 0.0, 1.0;
+
+	std::cout<<cam2UAV<<std::endl;
 }
 
 MarkerTracker::~MarkerTracker() {
 	// TODO Auto-generated destructor stub
+}
+
+void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
+{
+
 }
 
 void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {

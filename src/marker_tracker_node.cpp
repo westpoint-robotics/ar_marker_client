@@ -21,11 +21,12 @@ int main(int argc, char **argv)
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
   private_node_handle_.param("marker_id_target", marker_id_target, int(2));
 
-  ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 10, &MarkerTracker::ar_track_alvar_sub, mtracker);
+  ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MarkerTracker::ar_track_alvar_sub, mtracker);
+  ros::Subscriber odom_message = n.subscribe("/euroc3/msf_core/odometry", 1, &MarkerTracker::odometryCallback, mtracker);
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
-  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("target_pose", 10);
+  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose", 1);
 
 
   //mtracker->setPubUsvPose(pub_usv_pose);
