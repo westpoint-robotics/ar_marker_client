@@ -15,7 +15,8 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include <eigen3/Eigen/Eigen>
-
+#include <dynamic_reconfigure/server.h>
+#include <ar_marker_client/MarkerOffsetConfig.h>
 class MarkerTracker {
 public:
 	MarkerTracker();
@@ -28,6 +29,8 @@ public:
     void getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *angles);
 
+    //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
+
 	void setPubTargetPose(ros::Publisher pubTargetPose) {
 		pub_target_pose = pubTargetPose;
 	}
@@ -39,6 +42,13 @@ public:
 	void setTargetId(int targetId) {
 		target_id = targetId;
 	}
+
+    void setMarkerOffset(double *offset) {
+        cam2UAV(0,3) = offset[0];
+        cam2UAV(1,3) = offset[1];
+        cam2UAV(2,3) = offset[2];
+        std::cout<< "Transformation matrix cam2UAV"<< std::endl << cam2UAV << std::endl;
+    }
 
     /*
 	void setPubUsvPose(ros::Publisher pubUsvPose) {
@@ -58,6 +68,7 @@ public:
 	int target_id;
 	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
 	double markerPosition[3], markerOrientation[3];
+    double markerOffset[3];
 	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose;

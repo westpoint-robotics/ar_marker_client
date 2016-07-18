@@ -3,9 +3,9 @@ project(ar_marker_client)
 
 find_package(catkin REQUIRED COMPONENTS roscpp ar_track_alvar geometry_msgs dynamic_reconfigure)
 
-#generate_dynamic_reconfigure_options(
-#  cfg/Kalman.cfg
-#)
+generate_dynamic_reconfigure_options(
+  cfg/MarkerOffset.cfg
+)
 
 catkin_package(
   INCLUDE_DIRS launch

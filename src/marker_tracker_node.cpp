@@ -16,10 +16,16 @@ int main(int argc, char **argv)
   // Declare variables that can be modified by launch file or command line.
   int marker_id_usv;
   int marker_id_target;
+  double markerOffset[3] = {0.0};
 
   ros::NodeHandle private_node_handle_("~");
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
   private_node_handle_.param("marker_id_target", marker_id_target, int(2));
+  private_node_handle_.param("marker_offset_x", markerOffset[0], double(0));
+  private_node_handle_.param("marker_offset_y", markerOffset[1], double(0));
+  private_node_handle_.param("marker_offset_z", markerOffset[2], double(0));
+
+  std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MarkerTracker::ar_track_alvar_sub, mtracker);
   ros::Subscriber odom_message = n.subscribe("/euroc3/msf_core/odometry", 1, &MarkerTracker::odometryCallback, mtracker);
@@ -28,7 +34,7 @@ int main(int argc, char **argv)
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose", 1);
 
-
+  mtracker->setMarkerOffset(markerOffset);
   //mtracker->setPubUsvPose(pub_usv_pose);
   mtracker->setPubTargetPose(pub_target_pose);
   //mtracker->setUsvId(marker_id_usv);
