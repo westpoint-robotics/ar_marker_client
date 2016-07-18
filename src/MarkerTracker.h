@@ -22,6 +22,11 @@ public:
 	virtual ~MarkerTracker();
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
+    void quaternion2euler(double *quaternion, double *euler);
+    void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
+    	double *orientationEuler, double *position);
+    void getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
+    	double *angles);
 
 	void setPubTargetPose(ros::Publisher pubTargetPose) {
 		pub_target_pose = pubTargetPose;
@@ -51,7 +56,9 @@ public:
 
     //int usv_id;
 	int target_id;
-	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame;
+	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
+	double markerPosition[3], markerOrientation[3];
+	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose;
 };
