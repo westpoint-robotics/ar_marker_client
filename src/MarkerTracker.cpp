@@ -18,6 +18,12 @@ MarkerTracker::MarkerTracker() {
 					   0.0, 1.0, 0.0, 0.0,
 					   0.0, 0.0, 1.0, 0.0,
 					   0.0, 0.0, 0.0, 1.0;
+
+    filt_const = 0.9;
+    markerPositionOld[0] = 0;
+    markerPositionOld[1] = 0;
+    markerPositionOld[2] = 0;
+    first_meas = 0;
 }
 
 MarkerTracker::~MarkerTracker() {
@@ -129,6 +135,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
         */
         if (marker.id == target_id) {
             ROS_INFO("target detected");
+
             markerPosition[0] = marker.pose.pose.position.x;
             markerPosition[1] = marker.pose.pose.position.y;
             markerPosition[2] = marker.pose.pose.position.z;
@@ -152,7 +159,22 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 
             marker.pose.header.stamp = ros::Time::now();
 			pub_target_pose.publish(marker.pose);
-		}
+
+            if (first_meas == 0) {
+                first_meas = 1;
+                markerPositionOld[0] = marker.pose.pose.position.x;
+                markerPositionOld[1] = marker.pose.pose.position.y;
+                markerPositionOld[2] = marker.pose.pose.position.z;
+            }
+
+            marker.pose.pose.position.x = filt_const * markerPositionOld[0] + (1-filt_const) * marker.pose.pose.position.x;
+            marker.pose.pose.position.y = filt_const * markerPositionOld[1] + (1-filt_const) * marker.pose.pose.position.y;
+            marker.pose.pose.position.z = filt_const * markerPositionOld[2] + (1-filt_const) * marker.pose.pose.position.z;
+            pub_target_pose_f.publish(marker.pose);
+            markerPositionOld[0] = marker.pose.pose.position.x;
+            markerPositionOld[1] = marker.pose.pose.position.y;
+            markerPositionOld[2] = marker.pose.pose.position.z;
+        }
 		else {
 			ROS_INFO("Detected unexpected marker id = %d", marker.id);
 		}

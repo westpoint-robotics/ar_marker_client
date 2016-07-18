@@ -6,9 +6,9 @@
     <arg name="cam_info_topic" default="/euroc3/cam3/info" />
     <arg name="output_frame" default="cam0" />
     <arg name="package_id" default="5" />
-    <arg name="package_offset_x" default="0.1" />
-    <arg name="package_offset_y" default="0.05" />
-    <arg name="package_offset_z" default="-0.06" />
+    <arg name="package_offset_x" default="0.07" />
+    <arg name="package_offset_y" default="0.04" />
+    <arg name="package_offset_z" default="-0.05" />
     <arg name="namespace" default="euroc3" />
 
     

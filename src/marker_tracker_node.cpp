@@ -33,10 +33,14 @@ int main(int argc, char **argv)
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose", 1);
+  ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
+
 
   mtracker->setMarkerOffset(markerOffset);
   //mtracker->setPubUsvPose(pub_usv_pose);
   mtracker->setPubTargetPose(pub_target_pose);
+  mtracker->setPubTargetPose_f(pub_target_pose_f);
+
   //mtracker->setUsvId(marker_id_usv);
   mtracker->setTargetId(marker_id_target);
   // Tell ROS how fast to run this node.

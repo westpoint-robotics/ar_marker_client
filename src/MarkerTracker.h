@@ -35,6 +35,10 @@ public:
 		pub_target_pose = pubTargetPose;
 	}
 
+    void setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
+        pub_target_pose_f = pubTargetPose_f;
+    }
+
 	int getTargetId() const {
 		return target_id;
 	}
@@ -63,14 +67,19 @@ public:
 	}
     */
 
+    int first_meas;
     //int usv_id;
 	int target_id;
 	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
 	double markerPosition[3], markerOrientation[3];
+    double markerPositionOld[3];
     double markerOffset[3];
+    double filt_const;
 	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose;
+    ros::Publisher pub_target_pose_f;
+
 };
 
 #endif /* MARKERTRACKER_H_ */
