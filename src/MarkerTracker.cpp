@@ -9,9 +9,9 @@
 
 MarkerTracker::MarkerTracker() {
 	// TODO Auto-generated constructor stub
-	cam2UAV << 	0.0, -1.0, 0.0, -0.006, //-0.003 - ako se optitrack marker ne pomice
-				-1.0, 0.0, 0.0, 0.0231, //0.0231 - ako se optitrack marker ne pomice
-				0.0, 0.0, -1.0, -0.0818, //-0.1148 - ako se optitrack marker ne pomice
+    cam2UAV << 	0.0, -1.0, 0.0, 0.004, //-0.003 - ako se optitrack marker ne pomice
+                -1.0, 0.0, 0.0, -0.01, //0.0231 - ako se optitrack marker ne pomice
+                0.0, 0.0, -1.0, -0.046, //-0.1148 - ako se optitrack marker ne pomice
 				0.0, 0.0, 0.0, 1.0;
 
 	UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
