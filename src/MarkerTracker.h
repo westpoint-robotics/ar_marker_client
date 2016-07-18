@@ -44,10 +44,9 @@ public:
 	}
 
     void setMarkerOffset(double *offset) {
-        cam2UAV(0,3) = offset[0];
-        cam2UAV(1,3) = offset[1];
-        cam2UAV(2,3) = offset[2];
-        std::cout<< "Transformation matrix cam2UAV"<< std::endl << cam2UAV << std::endl;
+        markerOffset[0] = offset[0];
+        markerOffset[1] = offset[1];
+        markerOffset[2] = offset[2];
     }
 
     /*

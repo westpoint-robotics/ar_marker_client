@@ -8,13 +8,12 @@
 #include "MarkerTracker.h"
 
 MarkerTracker::MarkerTracker() {
-	// TODO Auto-generated constructor stub
+    // TODO Auto-generated constructor stub
 
-    cam2UAV << 	0.0, -1.0, 0.0, 0.0, //-0.003 - ako se optitrack marker ne pomice
-                -1.0, 0.0, 0.0, 0.0, //0.0231 - ako se optitrack marker ne pomice
-                0.0, 0.0, -1.0, 0.0, //-0.1148 - ako se optitrack marker ne pomice
-				0.0, 0.0, 0.0, 1.0;
-
+    cam2UAV << 	0.0, -1.0, 0.0, -0.003 - 0.04,
+                -1.0, 0.0, 0.0, 0.0231 - 0.022,
+                0.0, 0.0, -1.0, -0.1148 + 0.033,
+                0.0, 0.0, 0.0, 1.0;
 	UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
 					   0.0, 1.0, 0.0, 0.0,
 					   0.0, 0.0, 1.0, 0.0,
@@ -106,9 +105,9 @@ void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 	qGlobalFrame[2] = msg.pose.pose.orientation.y;
 	qGlobalFrame[3] = msg.pose.pose.orientation.z;
 	qGlobalFrame[0] = msg.pose.pose.orientation.w;
-	positionGlobalFrame[0] = msg.pose.pose.position.x;
-	positionGlobalFrame[1] = msg.pose.pose.position.y;
-	positionGlobalFrame[2] = msg.pose.pose.position.z;
+    positionGlobalFrame[0] = msg.pose.pose.position.x - markerOffset[0];
+    positionGlobalFrame[1] = msg.pose.pose.position.y - markerOffset[1];
+    positionGlobalFrame[2] = msg.pose.pose.position.z - markerOffset[2];
 
 	quaternion2euler(qGlobalFrame, eulerGlobalFrame);
 
