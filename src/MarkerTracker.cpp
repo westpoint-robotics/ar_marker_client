@@ -10,10 +10,11 @@
 MarkerTracker::MarkerTracker() {
     // TODO Auto-generated constructor stub
 
-    cam2UAV << 	0.0, -1.0, 0.0, -0.003 - 0.04,
-                -1.0, 0.0, 0.0, 0.0231 - 0.022,
-                0.0, 0.0, -1.0, -0.1148 + 0.033,
+    cam2UAV << 	0.0, -1.0, 0.0, -0.006, //-0.003 - ako se optitrack marker ne pomice
+                -1.0, 0.0, 0.0, 0.0231, //0.0231 - ako se optitrack marker ne pomice
+                0.0, 0.0, -1.0, -0.0815, //-0.1148 - ako se optitrack marker ne pomice
                 0.0, 0.0, 0.0, 1.0;
+                
 	UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
 					   0.0, 1.0, 0.0, 0.0,
 					   0.0, 0.0, 1.0, 0.0,
@@ -158,7 +159,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             marker.pose.pose.orientation.z = markerOrientation[2];
 
             marker.pose.header.stamp = ros::Time::now();
-			pub_target_pose.publish(marker.pose);
+			      pub_target_pose.publish(marker.pose);
 
             if (first_meas == 0) {
                 first_meas = 1;

@@ -1,0 +1,47 @@
+<launch>
+    <arg name="marker_size" default="5" />
+    <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
+    <arg name="max_track_error" default="1" />  <!--0.2 -->
+    <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
+    <arg name="cam_info_topic" default="/euroc3/cam3/info" />
+    <arg name="output_frame" default="cam0" />
+    <arg name="package_id" default="10" />
+    <arg name="package_offset_x" default="0.08" />
+    <arg name="package_offset_y" default="0.03" />
+    <arg name="package_offset_z" default="-0.05" />
+    <arg name="namespace" default="package" />
+    <arg name="odometry_topic" default="/euroc3/msf_core/odometry"/>
+    <arg name="kalman_rate" default="30"/>
+    <arg name="pos_noise" default="1"/>
+    <arg name="vel_noise" default="1"/>
+    <arg name="measure_noise" default="50"/>
+    <arg name="max_delay" default="0.3"/>
+    <arg name="mean_frame_n" default="30"/>
+    <arg name="pose_topic" default="ar_tracker/pose"/>
+
+    
+    <node name="ar_track_ctl_node" pkg="ar_marker_client" type="ar_track_node_ctl.py" ns="$(arg namespace)">
+        <param name="marker_size" value="$(arg marker_size)"/>
+        <param name="max_new_marker_error" value="$(arg max_new_marker_error)"/>
+        <param name="max_track_error" value="$(arg max_track_error)"/>
+        <param name="cam_image_topic" value="$(arg cam_image_topic)"/>
+        <param name="cam_info_topic" value="$(arg cam_info_topic)"/>
+        <param name="output_frame" value="$(arg output_frame)"/>
+        <param name="package_id" value="$(arg package_id)"/>
+        <param name="marker_offset_x" value="$(arg package_offset_x)"/>
+        <param name="marker_offset_y" value="$(arg package_offset_y)"/>
+        <param name="marker_offset_z" value="$(arg package_offset_z)"/>
+        <param name="odometry_topic" value="$(arg odometry_topic)"/>
+    </node>
+
+    <node name="kalman_tracker_node" pkg="euroc_ugv" type="kalman_tracker_node" ns="$(arg namespace)">
+        <param name="rate" value="$(arg kalman_rate)"/>
+        <param name="pos_noise" value="$(arg pos_noise)"/>
+        <param name="vel_noise" value="$(arg vel_noise)"/>
+        <param name="measure_noise" value="$(arg measure_noise)"/>
+        <param name="max_delay" value="$(arg max_delay)"/>
+        <param name="mean_frame_n" value="$(arg mean_frame_n)"/>
+        <param name="pose_topic" value="$(arg pose_topic)"/>
+    </node>
+    
+</launch>
