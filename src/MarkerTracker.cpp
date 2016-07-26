@@ -126,6 +126,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 	int i;
     ar_track_alvar_msgs::AlvarMarker marker;
 
+  bool packageDetectedFlag = false;
 	for(i = 0; i < msg->markers.size(); i++) {
 		marker = msg->markers[i];
         /*
@@ -160,6 +161,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 
             marker.pose.header.stamp = ros::Time::now();
 			      pub_target_pose.publish(marker.pose);
+            pubDetectionFlag.publish(1);
+            packageDetectedFlag = true;
 
             if (first_meas == 0) {
                 first_meas = 1;
@@ -180,4 +183,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 			ROS_INFO("Detected unexpected marker id = %d", marker.id);
 		}
 	}
+  if(packageDetectedFlag==false)
+  {
+    pubDetectionFlag.publish(0);
+  }
 }

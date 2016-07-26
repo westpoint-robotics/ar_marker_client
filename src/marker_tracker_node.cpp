@@ -36,12 +36,14 @@ int main(int argc, char **argv)
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
+  ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
 
 
   mtracker->setMarkerOffset(markerOffset);
   //mtracker->setPubUsvPose(pub_usv_pose);
   mtracker->setPubTargetPose(pub_target_pose);
   mtracker->setPubTargetPose_f(pub_target_pose_f);
+  mtracker->setPubDetectionFlag(pubDetectionFlag);
 
   //mtracker->setUsvId(marker_id_usv);
   mtracker->setTargetId(marker_id_target);

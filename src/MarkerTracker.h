@@ -14,6 +14,7 @@
 #include <nav_msgs/Odometry.h>
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "std_msgs/Int16.h"
 #include <eigen3/Eigen/Eigen>
 #include <dynamic_reconfigure/server.h>
 #include <ar_marker_client/MarkerOffsetConfig.h>
@@ -37,6 +38,11 @@ public:
 
     void setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
         pub_target_pose_f = pubTargetPose_f;
+    }
+
+    void setPubDetectionFlag(ros::Publisher fPub)
+    {
+    	pubDetectionFlag = fPub;
     }
 
 	int getTargetId() const {
@@ -77,7 +83,7 @@ public:
     double filt_const;
 	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
-	ros::Publisher pub_target_pose;
+	ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
 
 };

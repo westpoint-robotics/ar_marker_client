@@ -20,6 +20,8 @@ class NodeCtl:
         self.rate = rospy.Rate(10)
 
         rospy.Subscriber('pack_track_state', Int16, self.mission_state_cb)
+        self.detectionFlagPub = rospy.Publisher('detection_flag', Int16, 
+            queue_size=1)
 
         signal.signal(signal.SIGINT, self.exit_cb)
         signal.signal(signal.SIGTERM, self.exit_cb)
@@ -118,6 +120,9 @@ class NodeCtl:
                     self.process_ci.stop()
 
                 self.ar_track_state_old = self.ar_track_state
+
+            if self.ar_track_state == 0:
+                self.detectionFlagPub.publish(Int16(0))
 
 
 if __name__ == '__main__':
