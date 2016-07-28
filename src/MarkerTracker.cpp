@@ -31,6 +31,20 @@ MarkerTracker::~MarkerTracker() {
 	// TODO Auto-generated destructor stub
 }
 
+void MarkerTracker::LoadParameters(std::string file)
+{
+  // First open .yaml file
+  YAML::Node config = YAML::LoadFile(file);
+
+  std::vector<double> cam2imu_vector;
+  cam2imu_vector = config["cam2imu"].as<std::vector<double> >();
+
+  cam2UAV << cam2imu_vector[0], cam2imu_vector[1], cam2imu_vector[2], cam2imu_vector[3], //-0.003 - ako se optitrack marker ne pomice
+             cam2imu_vector[4], cam2imu_vector[5], cam2imu_vector[6], cam2imu_vector[7], //0.0231 - ako se optitrack marker ne pomice
+             cam2imu_vector[8], cam2imu_vector[9], cam2imu_vector[10], cam2imu_vector[11], //-0.1148 - ako se optitrack marker ne pomice
+             cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];
+}
+
 void MarkerTracker::quaternion2euler(double *quaternion, double *euler)
 {
   euler[0] = atan2(2 * (quaternion[0] * quaternion[1] + 

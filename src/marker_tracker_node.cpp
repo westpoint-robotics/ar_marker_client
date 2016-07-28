@@ -17,7 +17,9 @@ int main(int argc, char **argv)
   int marker_id_usv;
   int marker_id_target;
   double markerOffset[3] = {0.0};
-  std::string odometry_callback;
+  std::string odometry_callback, cam2imuTf;
+
+  std::string path = ros::package::getPath("ar_marker_tracker");
 
   ros::NodeHandle private_node_handle_("~");
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
@@ -26,8 +28,11 @@ int main(int argc, char **argv)
   private_node_handle_.param("marker_offset_y", markerOffset[1], double(0));
   private_node_handle_.param("marker_offset_z", markerOffset[2], double(0));
   private_node_handle_.param("odometry_callback", odometry_callback, std::string("/euroc3/msf_core/odometry"));
+  private_node_handle_.param("cam2imuTf", cam2imuTf, std::string("/parameters/cam2imu.yaml"));
 
   std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
+
+  mtracker->LoadParameters(path + cam2imuTf);
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MarkerTracker::ar_track_alvar_sub, mtracker);
   ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MarkerTracker::odometryCallback, mtracker);

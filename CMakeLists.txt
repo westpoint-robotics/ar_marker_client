@@ -15,7 +15,7 @@ add_library(MarkerTracker src/MarkerTracker.cpp)
 target_link_libraries(MarkerTracker ${catkin_LIBRARIES})
 
 add_executable(marker_tracker_node src/marker_tracker_node.cpp)
-target_link_libraries(marker_tracker_node MarkerTracker ${catkin_LIBRARIES})
+target_link_libraries(marker_tracker_node MarkerTracker ${catkin_LIBRARIES} yaml-cpp)
 
 #add_library(KalmanTracker src/KalmanTracker.cpp)
 #add_dependencies(KalmanTracker ${PROJECT_NAME}_gencfg)

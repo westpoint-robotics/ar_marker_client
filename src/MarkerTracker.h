@@ -18,6 +18,9 @@
 #include <eigen3/Eigen/Eigen>
 #include <dynamic_reconfigure/server.h>
 #include <ar_marker_client/MarkerOffsetConfig.h>
+#include "yaml-cpp/yaml.h"
+ #include <ros/package.h>
+
 class MarkerTracker {
 public:
 	MarkerTracker();
@@ -29,6 +32,7 @@ public:
     	double *orientationEuler, double *position);
     void getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *angles);
+    void LoadParameters(std::string file);
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
 
