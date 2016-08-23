@@ -156,8 +156,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerPosition[1] = marker.pose.pose.position.y;
             markerPosition[2] = marker.pose.pose.position.z;
 
-            markerOrientation[0] = marker.pose.pose.orientation.x;
-            markerOrientation[1] = marker.pose.pose.orientation.y;
+            markerOrientation[0] = marker.pose.pose.orientation.x*0;
+            markerOrientation[1] = marker.pose.pose.orientation.y*0;
             markerOrientation[2] = marker.pose.pose.orientation.z;
 
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
