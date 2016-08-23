@@ -49,6 +49,7 @@ class NodeCtl:
         self.marker_offset_x = rospy.get_param('~marker_offset_x')
         self.marker_offset_y = rospy.get_param('~marker_offset_y')
         self.marker_offset_z = rospy.get_param('~marker_offset_z')
+        self.cam2imuTf = rospy.get_param('~cam2imuTf')
 
 
         self.node_ar_track = roslaunch.core.Node(package=self.package_ar, node_type=self.exe_ar, name='ar_track_alvar',
@@ -61,7 +62,7 @@ class NodeCtl:
 
         self.node_mt = roslaunch.core.Node(package=self.package_mt, node_type=self.exe_mt, name='marker_tracker',
                                            namespace=rospy.get_namespace(), output="screen", args='_marker_id_target:="{0}" _marker_offset_x:="{1}" _marker_offset_y:="{2}" _marker_offset_z:="{3}"'.format(self.package_id,
-                                           self.marker_offset_x, self.marker_offset_y, self.marker_offset_z),
+                                           self.marker_offset_x, self.marker_offset_y, self.marker_offset_z, self.cam2imuTf),
                                            remap_args=[('target_pose','package_pose')])
         self.launch_mt = roslaunch.scriptapi.ROSLaunch()
         self.launch_mt.start()

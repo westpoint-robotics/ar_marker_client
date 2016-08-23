@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   double markerOffset[3] = {0.0};
   std::string odometry_callback, cam2imuTf;
 
-  std::string path = ros::package::getPath("ar_marker_tracker");
+  std::string path = ros::package::getPath("ar_marker_client");
 
   ros::NodeHandle private_node_handle_("~");
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
