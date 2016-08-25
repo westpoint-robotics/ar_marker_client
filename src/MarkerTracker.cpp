@@ -151,14 +151,23 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
         */
         if (marker.id == target_id) {
             ROS_INFO("target detected");
+            double q_marker[4], euler_marker[3];
 
             markerPosition[0] = marker.pose.pose.position.x;
             markerPosition[1] = marker.pose.pose.position.y;
             markerPosition[2] = marker.pose.pose.position.z;
 
-            markerOrientation[0] = marker.pose.pose.orientation.x*0;
-            markerOrientation[1] = marker.pose.pose.orientation.y*0;
-            markerOrientation[2] = marker.pose.pose.orientation.z;
+            q_marker[1] = marker.pose.pose.orientation.x;
+            q_marker[2] = marker.pose.pose.orientation.y;
+            q_marker[3] = marker.pose.pose.orientation.z;
+            q_marker[0] = marker.pose.pose.orientation.w;
+            marker.pose.pose.orientation.w = 0;
+
+            quaternion2euler(q_marker, euler_marker);
+
+            markerOrientation[0] = euler_marker[0]*0;
+            markerOrientation[1] = euler_marker[1]*0;
+            markerOrientation[2] = euler_marker[2];
 
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
             markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
