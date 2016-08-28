@@ -179,8 +179,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             marker.pose.pose.position.y = markerGlobalFrame(1,3);
             marker.pose.pose.position.z = markerGlobalFrame(2,3);
 
-            marker.pose.pose.position.x += (markerOffset[0])*cos(markerOrientation[2]) + (markerOffset[1])*sin(markerOrientation[2]);
-            marker.pose.pose.position.y += - (markerOffset[0])*sin(markerOrientation[2]) + (markerOffset[1])*cos(markerOrientation[2]);
+            marker.pose.pose.position.x += (markerOffset[0])*cos(markerOrientation[2]) - (markerOffset[1])*sin(markerOrientation[2]);
+            marker.pose.pose.position.y +=  (markerOffset[0])*sin(markerOrientation[2]) + (markerOffset[1])*cos(markerOrientation[2]);
             marker.pose.pose.position.z += markerOffset[2];
 
             marker.pose.pose.orientation.x = markerOrientation[0];
