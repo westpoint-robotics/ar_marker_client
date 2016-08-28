@@ -24,9 +24,9 @@ int main(int argc, char **argv)
   ros::NodeHandle private_node_handle_("~");
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
   private_node_handle_.param("marker_id_target", marker_id_target, int(2));
-  private_node_handle_.param("marker_offset_x", markerOffset[0], double(0.11));
-  private_node_handle_.param("marker_offset_y", markerOffset[1], double(0.057));
-  private_node_handle_.param("marker_offset_z", markerOffset[2], double(0.025));
+  private_node_handle_.param("marker_offset_x", markerOffset[0], double(0));
+  private_node_handle_.param("marker_offset_y", markerOffset[1], double(0));
+  private_node_handle_.param("marker_offset_z", markerOffset[2], double(0));
   private_node_handle_.param("odometry_callback", odometry_callback, std::string("/euroc3/msf_core/odometry"));
   private_node_handle_.param("cam2imuTf", cam2imuTf, std::string("/parameters/cam2imu.yaml"));
 

@@ -170,10 +170,6 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerOrientation[1] = euler_marker[1];
             markerOrientation[2] = euler_marker[2];
 
-            markerPosition[0] += markerOffset[1]*cos(euler_marker[2]) + markerOffset[0]*sin(euler_marker[2]);
-            markerPosition[1] += markerOffset[1]*sin(euler_marker[2]) - markerOffset[0]*cos(euler_marker[2]);
-            markerPosition[2] += markerOffset[2];
-
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
             markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
 
@@ -182,6 +178,10 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             marker.pose.pose.position.x = markerGlobalFrame(0,3);
             marker.pose.pose.position.y = markerGlobalFrame(1,3);
             marker.pose.pose.position.z = markerGlobalFrame(2,3);
+
+            marker.pose.pose.position.x += (markerOffset[0])*cos(markerOrientation[2]) + (markerOffset[1])*sin(markerOrientation[2]);
+            marker.pose.pose.position.y += - (markerOffset[0])*sin(markerOrientation[2]) + (markerOffset[1])*cos(markerOrientation[2]);
+            marker.pose.pose.position.z += markerOffset[2];
 
             marker.pose.pose.orientation.x = markerOrientation[0];
             marker.pose.pose.orientation.y = markerOrientation[1];

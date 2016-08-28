@@ -5,7 +5,7 @@ camera_matrix:
   rows: 3
   cols: 3
   data: [464.69998552912386, 0, 371.54871319955964, 0, 464.7198988074454, 265.49508717929507, 0, 0, 1]
-distortion_model: plumb_bob
+distortion_model: radtan
 distortion_coefficients:
   rows: 1
   cols: 5
@@ -18,3 +18,4 @@ projection_matrix:
   rows: 3
   cols: 4
   data: [464.69998552912386, 0, 371.54871319955964, 0, 0, 464.7198988074454, 265.49508717929507, 0, 0, 0, 1, 0]
+
