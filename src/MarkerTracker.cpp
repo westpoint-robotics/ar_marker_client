@@ -15,7 +15,7 @@ MarkerTracker::MarkerTracker() {
                 0.0, 0.0, -1.0, -0.0815, //-0.1148 - ako se optitrack marker ne pomice
                 0.0, 0.0, 0.0, 1.0;
                 
-	UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
+	  UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
 					   0.0, 1.0, 0.0, 0.0,
 					   0.0, 0.0, 1.0, 0.0,
 					   0.0, 0.0, 0.0, 1.0;
@@ -43,6 +43,7 @@ void MarkerTracker::LoadParameters(std::string file)
              cam2imu_vector[4], cam2imu_vector[5], cam2imu_vector[6], cam2imu_vector[7], //0.0231 - ako se optitrack marker ne pomice
              cam2imu_vector[8], cam2imu_vector[9], cam2imu_vector[10], cam2imu_vector[11], //-0.1148 - ako se optitrack marker ne pomice
              cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];
+
 }
 
 void MarkerTracker::quaternion2euler(double *quaternion, double *euler)
@@ -72,7 +73,8 @@ void MarkerTracker::getRotationTranslationMatrix(Eigen::Matrix4d &rotationTransl
   	z = orientationEuler[2];
 
 	r11 = cos(y)*cos(z);
-    r12 = cos(z)*sin(x)*sin(y) - cos(x)*sin(z);
+
+  r12 = cos(z)*sin(x)*sin(y) - cos(x)*sin(z);
 
 	r13 = sin(x)*sin(z) + cos(x)*cos(z)*sin(y);
 
@@ -94,7 +96,7 @@ void MarkerTracker::getRotationTranslationMatrix(Eigen::Matrix4d &rotationTransl
 
 
 	rotationTranslationMatrix << r11, r12, r13, t1,
-	    	  					 r21, r22, r23, t2,
+	    	  					           r21, r22, r23, t2,
 	                             r31, r32, r33, t3,
 	                             0,   0,   0,   1;
 }
@@ -126,9 +128,9 @@ void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 	qGlobalFrame[2] = msg.pose.pose.orientation.y;
 	qGlobalFrame[3] = msg.pose.pose.orientation.z;
 	qGlobalFrame[0] = msg.pose.pose.orientation.w;
-    positionGlobalFrame[0] = msg.pose.pose.position.x - markerOffset[0];
-    positionGlobalFrame[1] = msg.pose.pose.position.y - markerOffset[1];
-    positionGlobalFrame[2] = msg.pose.pose.position.z - markerOffset[2];
+    positionGlobalFrame[0] = msg.pose.pose.position.x;
+    positionGlobalFrame[1] = msg.pose.pose.position.y;
+    positionGlobalFrame[2] = msg.pose.pose.position.z;
 
 	quaternion2euler(qGlobalFrame, eulerGlobalFrame);
 
@@ -161,12 +163,11 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             q_marker[2] = marker.pose.pose.orientation.y;
             q_marker[3] = marker.pose.pose.orientation.z;
             q_marker[0] = marker.pose.pose.orientation.w;
-            marker.pose.pose.orientation.w = 0;
 
             quaternion2euler(q_marker, euler_marker);
 
-            markerOrientation[0] = euler_marker[0]*0;
-            markerOrientation[1] = euler_marker[1]*0;
+            markerOrientation[0] = euler_marker[0];
+            markerOrientation[1] = euler_marker[1];
             markerOrientation[2] = euler_marker[2];
 
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
@@ -181,6 +182,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             marker.pose.pose.orientation.x = markerOrientation[0];
             marker.pose.pose.orientation.y = markerOrientation[1];
             marker.pose.pose.orientation.z = markerOrientation[2];
+
+            marker.pose.pose.orientation.w = 0;
 
             marker.pose.header.stamp = ros::Time::now();
 			      pub_target_pose.publish(marker.pose);

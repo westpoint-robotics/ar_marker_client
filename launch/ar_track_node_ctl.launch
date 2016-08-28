@@ -4,7 +4,7 @@
     <arg name="max_track_error" default="1" />  <!--0.2 -->
     <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
     <arg name="cam_info_topic" default="/euroc3/cam3/info" />
-    <arg name="output_frame" default="cam0" />
+    <arg name="output_frame" default="cam3" />
     <arg name="package_id" default="5" />
     <arg name="package_offset_x" default="0.07" />
     <arg name="package_offset_y" default="0.04" />
@@ -12,7 +12,7 @@
     <arg name="namespace" default="euroc3" />
 
     
-    <node name="ar_track_ctl_node" pkg="ar_marker_client" type="ar_track_node_ctl.py" ns="$(arg namespace)">
+    <node name="ar_track_ctl_node" pkg="ar_marker_client" type="ar_track_node_ctl.py" ns="$(arg namespace)" output="screen">
         <param name="marker_size" value="$(arg marker_size)"/>
         <param name="max_new_marker_error" value="$(arg max_new_marker_error)"/>
         <param name="max_track_error" value="$(arg max_track_error)"/>
@@ -23,6 +23,7 @@
         <param name="marker_offset_x" value="$(arg package_offset_x)"/>
         <param name="marker_offset_y" value="$(arg package_offset_y)"/>
         <param name="marker_offset_z" value="$(arg package_offset_z)"/>
+        <param name="cam2imuTf" value="/parameters/cam2imu.yaml"/>
     </node>
     
 </launch>
