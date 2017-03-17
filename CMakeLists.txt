@@ -14,8 +14,14 @@ catkin_package(
 add_library(MarkerTracker src/MarkerTracker.cpp)
 target_link_libraries(MarkerTracker ${catkin_LIBRARIES})
 
+add_library(MultiMarkerTracker src/MultiMarkerTracker.cpp)
+target_link_libraries(MultiMarkerTracker ${catkin_LIBRARIES})
+
 add_executable(marker_tracker_node src/marker_tracker_node.cpp)
 target_link_libraries(marker_tracker_node MarkerTracker ${catkin_LIBRARIES} yaml-cpp)
+
+add_executable(multi_marker_tracker_node src/multi_marker_tracker_node.cpp)
+target_link_libraries(multi_marker_tracker_node MultiMarkerTracker ${catkin_LIBRARIES} yaml-cpp)
 
 #add_library(KalmanTracker src/KalmanTracker.cpp)
 #add_dependencies(KalmanTracker ${PROJECT_NAME}_gencfg)
