@@ -10,9 +10,9 @@
 MarkerTracker::MarkerTracker() {
     // TODO Auto-generated constructor stub
 
-    cam2UAV << 	0.0, -1.0, 0.0, -0.006, //-0.003 - ako se optitrack marker ne pomice
-                -1.0, 0.0, 0.0, 0.0231, //0.0231 - ako se optitrack marker ne pomice
-                0.0, 0.0, -1.0, -0.0815, //-0.1148 - ako se optitrack marker ne pomice
+    cam2UAV << 	0.0, -1.0, 0.0, 0.005, //-0.003 - ako se optitrack marker ne pomice
+                -1.0, 0.0, 0.0, -0.007, //0.0231 - ako se optitrack marker ne pomice
+                0.0, 0.0, -1.0, -0.05148, //-0.1148 - ako se optitrack marker ne pomice
                 0.0, 0.0, 0.0, 1.0;
                 
 	  UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
@@ -35,15 +35,12 @@ void MarkerTracker::LoadParameters(std::string file)
 {
   // First open .yaml file
   YAML::Node config = YAML::LoadFile(file);
-
   std::vector<double> cam2imu_vector;
   cam2imu_vector = config["cam2imu"].as<std::vector<double> >();
-
   cam2UAV << cam2imu_vector[0], cam2imu_vector[1], cam2imu_vector[2], cam2imu_vector[3], //-0.003 - ako se optitrack marker ne pomice
              cam2imu_vector[4], cam2imu_vector[5], cam2imu_vector[6], cam2imu_vector[7], //0.0231 - ako se optitrack marker ne pomice
              cam2imu_vector[8], cam2imu_vector[9], cam2imu_vector[10], cam2imu_vector[11], //-0.1148 - ako se optitrack marker ne pomice
              cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];
-
 }
 
 void MarkerTracker::quaternion2euler(double *quaternion, double *euler)
@@ -122,25 +119,29 @@ void MarkerTracker::getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rota
   angles[2] = yaw;
 }
 
+void MarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
+{
+  qGlobalFrame[1] = msg.orientation.x;
+  qGlobalFrame[2] = msg.orientation.y;
+  qGlobalFrame[3] = msg.orientation.z;
+  qGlobalFrame[0] = msg.orientation.w;
+  positionGlobalFrame[0] = 0;
+  positionGlobalFrame[1] = 0;
+  positionGlobalFrame[2] = 0;
+
+  quaternion2euler(qGlobalFrame, eulerGlobalFrame);
+
+  getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
+}
+
 void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
-	qGlobalFrame[1] = msg.pose.pose.orientation.x;
-	qGlobalFrame[2] = msg.pose.pose.orientation.y;
-	qGlobalFrame[3] = msg.pose.pose.orientation.z;
-	qGlobalFrame[0] = msg.pose.pose.orientation.w;
-    positionGlobalFrame[0] = msg.pose.pose.position.x;
-    positionGlobalFrame[1] = msg.pose.pose.position.y;
-    positionGlobalFrame[2] = msg.pose.pose.position.z;
-
-	quaternion2euler(qGlobalFrame, eulerGlobalFrame);
-
-	getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
-
 }
 
 void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
 	int i;
-    ar_track_alvar_msgs::AlvarMarker marker;
+  ar_track_alvar_msgs::AlvarMarker marker;
+  geometry_msgs::PointStamped markerPointStamped;
 
   bool packageDetectedFlag = false;
 	for(i = 0; i < msg->markers.size(); i++) {
@@ -186,11 +187,20 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             marker.pose.pose.orientation.x = markerOrientation[0];
             marker.pose.pose.orientation.y = markerOrientation[1];
             marker.pose.pose.orientation.z = markerOrientation[2];
-
             marker.pose.pose.orientation.w = 0;
 
             marker.pose.header.stamp = ros::Time::now();
-			      pub_target_pose.publish(marker.pose);
+            marker.pose.header.frame_id = "fcu";
+
+            //publish za poseition_update
+            markerPointStamped.header.stamp = ros::Time::now();
+            markerPointStamped.header.frame_id = "fcu";
+            markerPointStamped.point.x = marker.pose.pose.position.x;
+            markerPointStamped.point.y = marker.pose.pose.position.y;
+            markerPointStamped.point.z = marker.pose.pose.position.z;
+            pub_target_pose.publish(markerPointStamped);
+
+			      //pub_target_pose.publish(marker.pose);
             pubDetectionFlag.publish(1);
             packageDetectedFlag = true;
 
