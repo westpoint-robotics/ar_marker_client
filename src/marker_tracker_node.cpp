@@ -32,14 +32,16 @@ int main(int argc, char **argv)
 
   std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
 
-  mtracker->LoadParameters(path + cam2imuTf);
+  std::cout << path << std::endl;
+  //mtracker->LoadParameters(path + cam2imuTf);
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MarkerTracker::ar_track_alvar_sub, mtracker);
   ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MarkerTracker::odometryCallback, mtracker);
+  ros::Subscriber imu_message = n.subscribe("/euroc3/imu", 1, &MarkerTracker::imuCallback, mtracker);
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
-  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose", 1);
+  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
   ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
 

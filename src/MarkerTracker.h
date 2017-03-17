@@ -19,7 +19,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <ar_marker_client/MarkerOffsetConfig.h>
 #include "yaml-cpp/yaml.h"
+#include "geometry_msgs/PointStamped.h"
  #include <ros/package.h>
+#include <sensor_msgs/Imu.h>
 
 class MarkerTracker {
 public:
@@ -27,6 +29,7 @@ public:
 	virtual ~MarkerTracker();
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
+    void imuCallback(const sensor_msgs::Imu &msg);
     void quaternion2euler(double *quaternion, double *euler);
     void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *orientationEuler, double *position);
@@ -89,6 +92,7 @@ public:
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
+    geometry_msgs::PointStamped markerPointStamped;
 
 };
 
