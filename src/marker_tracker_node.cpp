@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
     ros::Duration timeDiff = mtracker->markerPointStamped.header.stamp - mtracker->softData.header.stamp;
 
-    if (fabs(timeDiff.toSec()) < 0.06 && meas_number<v_length)
+    if (fabs(timeDiff.toSec()) < 0.16 && meas_number<v_length)
     {
       meas_number++;
       std::cout<<meas_number<<std::endl;

@@ -256,7 +256,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
         
         }
 		else {
-			ROS_INFO("Detected unexpected marker id = %d", marker.id);
+			//ROS_INFO("Detected unexpected marker id = %d", marker.id);
 		}
 	}
   if(packageDetectedFlag==false)
