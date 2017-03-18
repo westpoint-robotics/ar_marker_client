@@ -47,7 +47,7 @@ public:
     bool isMainMarker(int marker_id);
     bool allMarkerFramesAdded();
     int canAddNewFrames();
-    void correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker);
+    geometry_msgs::PoseStamped correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker);
     void initUavPosePublishers(ros::NodeHandle &nh);
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
@@ -125,6 +125,7 @@ public:
     ros::Publisher pub_target_pose_f;
     ros::Publisher pub_marker0;
     std::map<int,ros::Publisher> uav_pose_publishers;
+    std::map<int,ros::Publisher> uav_marker_pose_publishers;
     geometry_msgs::PointStamped markerPointStamped;
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;

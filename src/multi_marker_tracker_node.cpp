@@ -21,8 +21,8 @@ int main(int argc, char **argv)
   std::string camera_frame("cam3");  // todo, add as a param
   std::vector<int> marker_ids;
   //todo read marker ids from rosparam
-  marker_ids.push_back(11);
-  //marker_ids.push_back(10);
+  marker_ids.push_back(12);
+  marker_ids.push_back(10);
   //marker_ids.push_back(5);
   //marker_ids.push_back(11);
 
@@ -68,9 +68,9 @@ int main(int argc, char **argv)
   //mtracker->setUsvId(marker_id_usv);
   mtracker->setTargetId(marker_id_target);
   // Tell ROS how fast to run this node.
-  ros::Rate r(20);
+  ros::Rate r(30);
 
-  ROS_INFO("Setting target marker id %d \n", marker_id_target);
+  //ROS_INFO("Setting target marker id %d \n", marker_id_target);
 
   // Main loop.
   while (n.ok())

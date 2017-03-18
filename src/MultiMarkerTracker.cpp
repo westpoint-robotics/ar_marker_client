@@ -190,17 +190,24 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
             pub_marker0.publish(pose_msg);
 
         }
-
-        correctMarkerPose(marker);
+        geometry_msgs::PoseStamped uav_pose;
+        uav_pose =  correctMarkerPose(marker);
         marker_detected[marker.id] = true;
         marker_detected_counter[marker.id]++;
         //ROS_INFO("Corrected position marker id %d, %.2f, %.2f, %.2f", marker.id, marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z);
 
+        // publish uav pose relative to the marker
+        ROS_INFO("Publish uav pose relative to marker %d", marker.id);
+        uav_marker_pose_publishers[marker.id].publish(uav_pose);
 
+
+        // publish transforms
+        /*
         tf_transform.setOrigin( tf::Vector3(marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z));
         tf_transform.setRotation( tf::Quaternion(marker.pose.pose.orientation.x, marker.pose.pose.orientation.y, marker.pose.pose.orientation.z, marker.pose.pose.orientation.w ));
         ROS_INFO("Camera frame %s, marker frame %s", camera_frame.c_str(), marker_frames_corrected[marker.id].c_str());
         tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(),  marker_frames_corrected[marker.id].c_str()));
+        */
 
         //publish za poseition_update
         /*
@@ -233,6 +240,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         */
         if (isMainMarker(marker.id)) {
 
+            /*
             markerPointStamped.header.stamp = ros::Time::now();
             markerPointStamped.header.frame_id = "cam3";
             markerPointStamped.point.x = marker.pose.pose.position.x;
@@ -247,7 +255,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
             marker.pose.header.stamp = ros::Time::now();
             pub_target_pose_f.publish(marker.pose);
 
-
+            */
         }
     }
     else {
@@ -255,7 +263,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     }
   }
 
-
+/*
   if (!allMarkerFramesAdded()) {
 
       int marker_base_frame_id = canAddNewFrames();
@@ -346,7 +354,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
   }
 
-
+*/
   /*
   if(packageDetectedFlag == false)
   {
@@ -391,12 +399,18 @@ bool MultiMarkerTracker::allMarkerFramesAdded() {
 void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
   for(int i = 0; i < marker_ids.size(); i++) {
      uav_pose_publishers[marker_ids[i]] =  nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose") + boost::lexical_cast<std::string>(i)).c_str(), 1);
+     uav_marker_pose_publishers[marker_ids[i]] = nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose_relative") + boost::lexical_cast<std::string>(i)).c_str(), 1);
   }
   ROS_INFO("Initialized pose publishers");
 }
 
-void MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker) {
+geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker) {
+
+  // input ar marker - position of the marker w.r.t the UAV camera
+  // output pose stamped - position of the UAV w.r.t. the marker frame
+
   double q_marker[4], euler_marker[3];
+  geometry_msgs::PoseStamped uav_pose;
 
   markerPosition[0] = marker.pose.pose.position.x;
   markerPosition[1] = marker.pose.pose.position.y;
@@ -417,32 +431,31 @@ void MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker mark
   markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
 
   getAnglesFromRotationTranslationMatrix(markerGlobalFrame, markerOrientation);
+
+
+  //marker.pose.pose.position.x = markerGlobalFrame(0,3);
+  //marker.pose.pose.position.y = markerGlobalFrame(1,3);
+  //marker.pose.pose.position.z = markerGlobalFrame(2,3);
+
+  uav_pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
+  uav_pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
+  uav_pose.pose.position.z = markerGlobalFrame(2,3);
+
+  uav_pose.pose.position.x = uav_pose.pose.position.x;// + markerOffset[0];
+  uav_pose.pose.position.y = uav_pose.pose.position.y;// + markerOffset[1];
+  uav_pose.pose.position.z = -uav_pose.pose.position.z;// + markerOffset[2];
+
+
   Eigen::Matrix3d rotation_matrix = markerGlobalFrame.block<3,3>(0,0);
   Eigen::Quaterniond quaternion(rotation_matrix);
+  uav_pose.pose.orientation.x = quaternion.x();
+  uav_pose.pose.orientation.y = quaternion.y();
+  uav_pose.pose.orientation.z = quaternion.z();
+  uav_pose.pose.orientation.w = quaternion.w();
 
-  /*
-  marker.pose.pose.position.x = markerGlobalFrame(0,3);
-  marker.pose.pose.position.y = markerGlobalFrame(1,3);
-  marker.pose.pose.position.z = markerGlobalFrame(2,3);
-  */
-  marker.pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
-  marker.pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
-  marker.pose.pose.position.z = -markerGlobalFrame(2,3);
+  uav_pose.header.stamp = marker.header.stamp;
+  uav_pose.header.frame_id = "world";
 
+  return uav_pose;
 
-  /*
-  marker.pose.pose.position.x += (markerOffset[0])*cos(markerOrientation[2]) - (markerOffset[1])*sin(markerOrientation[2]);
-  marker.pose.pose.position.y +=  (markerOffset[0])*sin(markerOrientation[2]) + (markerOffset[1])*cos(markerOrientation[2]);
-  marker.pose.pose.position.z += markerOffset[2];
-  */
-
-
-  marker.pose.pose.orientation.x = quaternion.x();
-  marker.pose.pose.orientation.y = quaternion.y();
-  marker.pose.pose.orientation.z = quaternion.z();
-  marker.pose.pose.orientation.w = quaternion.w();
-
-
-  marker.pose.header.stamp = ros::Time::now();
-  marker.pose.header.frame_id = "world";
 }
