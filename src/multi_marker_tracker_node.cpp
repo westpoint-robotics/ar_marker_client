@@ -21,10 +21,10 @@ int main(int argc, char **argv)
   std::string camera_frame("cam3");  // todo, add as a param
   std::vector<int> marker_ids;
   //todo read marker ids from rosparam
-  marker_ids.push_back(12);
-  marker_ids.push_back(10);
-  marker_ids.push_back(5);
   marker_ids.push_back(11);
+  //marker_ids.push_back(10);
+  //marker_ids.push_back(5);
+  //marker_ids.push_back(11);
 
   std::string path = ros::package::getPath("ar_marker_client");
   ROS_INFO("Reading ros params");
@@ -50,6 +50,7 @@ int main(int argc, char **argv)
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
+  ros::Publisher pub_marker0 = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/marker0", 1);
   ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
 
   ROS_INFO("Initializing.");
@@ -58,6 +59,7 @@ int main(int argc, char **argv)
   mtracker->setMarkerIds(marker_ids);
   mtracker->setPubTargetPose(pub_target_pose);
   mtracker->setPubTargetPose_f(pub_target_pose_f);
+  mtracker->setPubMarker0(pub_marker0);
   mtracker->setPubDetectionFlag(pubDetectionFlag);
   mtracker->setCameraFrame(camera_frame);
   ROS_INFO("Initializing publisher.");

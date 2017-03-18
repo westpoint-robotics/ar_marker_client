@@ -96,6 +96,9 @@ public:
       this->camera_frame = camera_frame;
     }
 
+    void setPubMarker0(ros::Publisher pub) {
+        pub_marker0 = pub;
+     }
 
     int first_meas;
     //int usv_id;
@@ -120,6 +123,7 @@ public:
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
+    ros::Publisher pub_marker0;
     std::map<int,ros::Publisher> uav_pose_publishers;
     geometry_msgs::PointStamped markerPointStamped;
     std::string camera_frame;
