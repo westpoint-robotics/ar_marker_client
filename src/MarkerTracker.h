@@ -25,8 +25,8 @@
 
 class MarkerTracker {
 public:
-	MarkerTracker();
-	virtual ~MarkerTracker();
+    MarkerTracker();
+    virtual ~MarkerTracker();
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
     void imuCallback(const sensor_msgs::Imu &msg);
@@ -82,15 +82,15 @@ public:
 
     int first_meas;
     //int usv_id;
-	int target_id;
-	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
-	double markerPosition[3], markerOrientation[3];
+    int target_id;
+    double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
+    double markerPosition[3], markerOrientation[3];
     double markerPositionOld[3];
     double markerOffset[3];
     double filt_const;
-	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
+    Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
-	ros::Publisher pub_target_pose, pubDetectionFlag;
+    ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
     geometry_msgs::PointStamped markerPointStamped;
 

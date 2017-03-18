@@ -1,22 +1,13 @@
 <launch>
-    <arg name="marker_size" default="8" />
-    <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
-    <arg name="max_track_error" default="1" />  <!--0.2 -->
-    <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
-    <arg name="cam_info_topic" default="/euroc3/cam3/info" />
-    <arg name="output_frame" default="cam3" />
-    <arg name="marker_offset_x" default="0.5" />
-    <arg name="marker_offset_y" default="0.5" />
-    <arg name="marker_offset_z" default="0" />
-    <arg name="namespace" default="euroc3" />
-    <arg name="marker_ids" default="[1, 2, 3]" />
-
-    <rosparam param="marker_ids">[1, 2, 3, 4]</rosparam>
     
-    <node name="multi_marker_tracker" pkg="ar_marker_client" type="multi_marker_tracker_node" ns="$(arg namespace)" output="screen">
-        <param name="marker_offset_x" value="$(arg marker_offset_x)"/>
-        <param name="marker_offset_y" value="$(arg marker_offset_y)"/>
-        <param name="marker_offset_z" value="$(arg marker_offset_z)"/>
+    <arg name="marker_id_target" default="10"/>
+    <arg name="namespace" default="euroc" />
+    
+    <node name="multi_marker_tracker" pkg="ar_marker_client" type="multi_marker_tracker_node" ns="$(arg namespace)" output="screen" >
+        <param name="marker_id_target" value="$(arg marker_id_target)"/>
+        <param name="marker_offset_x" value="0"/>
+        <param name="marker_offset_y" value="0"/>
+        <param name="marker_offset_z" value="0"/>
         <param name="cam2imuTf" value="/parameters/cam2imu.yaml"/>
     </node>
     

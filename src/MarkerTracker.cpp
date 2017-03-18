@@ -15,10 +15,10 @@ MarkerTracker::MarkerTracker() {
                 0.0, 0.0, -1.0, -0.05148, //-0.1148 - ako se optitrack marker ne pomice
                 0.0, 0.0, 0.0, 1.0;
                 
-	  UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
-					   0.0, 1.0, 0.0, 0.0,
-					   0.0, 0.0, 1.0, 0.0,
-					   0.0, 0.0, 0.0, 1.0;
+    UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0, 0.0,
+                       0.0, 0.0, 1.0, 0.0,
+                       0.0, 0.0, 0.0, 1.0;
 
     filt_const = 0.9;
     markerPositionOld[0] = 0;
@@ -155,6 +155,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
         if (marker.id == target_id) {
             ROS_INFO("target detected");
             double q_marker[4], euler_marker[3];
+            std_msgs::Int16 detection_flag_msg;
 
             markerPosition[0] = marker.pose.pose.position.x;
             markerPosition[1] = marker.pose.pose.position.y;
@@ -200,8 +201,9 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerPointStamped.point.z = marker.pose.pose.position.z;
             pub_target_pose.publish(markerPointStamped);
 
-			      //pub_target_pose.publish(marker.pose);
-            pubDetectionFlag.publish(1);
+            //pub_target_pose.publish(marker.pose);
+            detection_flag_msg.data = 1;
+            pubDetectionFlag.publish(detection_flag_msg);
             packageDetectedFlag = true;
 
             if (first_meas == 0) {
@@ -225,6 +227,8 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 	}
   if(packageDetectedFlag==false)
   {
-    pubDetectionFlag.publish(0);
+      std_msgs::Int16 detection_flag_msg;
+      detection_flag_msg.data = 0;
+      pubDetectionFlag.publish(detection_flag_msg);
   }
 }
