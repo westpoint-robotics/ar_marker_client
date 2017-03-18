@@ -45,9 +45,10 @@ public:
 
     bool isValidMarkerId(int marker_id);
     bool isMainMarker(int marker_id);
-    bool areAllMarkerFramesAdded();
+    bool allMarkerFramesAdded();
     int canAddNewFrames();
     void correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker);
+    void initUavPosePublishers(ros::NodeHandle &nh);
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
 
@@ -83,9 +84,11 @@ public:
       for(std::vector<int>::size_type i = 0; i != this->marker_ids.size(); i++) {
           this->marker_detected_counter[this->marker_ids[i]] = 0;
           this->marker_frame_added[this->marker_ids[i]] = false;
-          if (i == 0) {
-            main_marker_frame = std::string("marker") + boost::lexical_cast<std::string>(marker_ids[i]);
-          }
+          marker_frames[this->marker_ids[i]] = std::string("marker")
+                                               + boost::lexical_cast<std::string>(marker_ids[i]);
+          marker_frames_corrected[this->marker_ids[i]] = std::string("ar_marker_")
+                                                         + boost::lexical_cast<std::string>(marker_ids[i])
+                                                         + std::string("_corrected");
       }
     }
 
@@ -105,6 +108,10 @@ public:
     double filt_const;
     std::map<int, geometry_msgs::PoseStamped> marker_poses;
     std::map<int, geometry_msgs::PoseStamped> marker_poses_old;
+    std::map<int, geometry_msgs::PoseStamped> uav_pose;
+    std::map<int, geometry_msgs::PoseStamped> uav_pose_old;
+    std::map<int, std::string> marker_frames_corrected;
+    std::map<int, std::string> marker_frames;
     std::map<int, bool> marker_detected;
     std::map<int, int> marker_detected_counter;
     std::map<int, bool> marker_frame_added;
@@ -113,6 +120,7 @@ public:
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
+    std::map<int,ros::Publisher> uav_pose_publishers;
     geometry_msgs::PointStamped markerPointStamped;
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;

@@ -50,6 +50,7 @@ int main(int argc, char **argv)
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
   ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
 
+  ROS_INFO("Initializing.");
 
   mtracker->setMarkerOffset(markerOffset);
   mtracker->setMarkerIds(marker_ids);
@@ -57,6 +58,8 @@ int main(int argc, char **argv)
   mtracker->setPubTargetPose_f(pub_target_pose_f);
   mtracker->setPubDetectionFlag(pubDetectionFlag);
   mtracker->setCameraFrame(camera_frame);
+  ROS_INFO("Initializing publisher.");
+  mtracker->initUavPosePublishers(n);
 
   //mtracker->setUsvId(marker_id_usv);
   mtracker->setTargetId(marker_id_target);
