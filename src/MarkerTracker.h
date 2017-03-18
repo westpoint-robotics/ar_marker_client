@@ -85,6 +85,7 @@ public:
 
     int first_meas;
     int soft_data_vector_length;
+    double soft_yaw, marker_yaw;
     //int usv_id;
 	int target_id;
 	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
@@ -93,7 +94,7 @@ public:
     double markerOffset[3];
     double filt_const;
     bool initializationFlag;
-	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
+	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame, UAV2Soft;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;

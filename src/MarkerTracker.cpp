@@ -20,12 +20,19 @@ MarkerTracker::MarkerTracker() {
 					   0.0, 0.0, 1.0, 0.0,
 					   0.0, 0.0, 0.0, 1.0;
 
+    UAV2Soft << 1.0, 0.0, 0.0, 0.0,
+             0.0, 1.0, 0.0, 0.0,
+             0.0, 0.0, -1.0, 0.0,
+             0.0, 0.0, 0.0, 1.0;
+
     filt_const = 0.9;
     markerPositionOld[0] = 0;
     markerPositionOld[1] = 0;
     markerPositionOld[2] = 0;
     first_meas = 0;
     alignedFlag = false;
+    soft_yaw = 0;
+    marker_yaw = 0;
 }
 
 MarkerTracker::~MarkerTracker() {
@@ -141,7 +148,14 @@ void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 
 void MarkerTracker::softCallback(const geometry_msgs::TransformStamped &msg)
 {
+  //double soft_q[4], soft_euler[3];
+
+  //soft_q = msg.
+
+  //quaternion2euler(soft_q, soft_euler);
+
   softData = msg;
+  //soft_yaw = soft_euler[2];
 }
 
 bool MarkerTracker::isAlignedMarkerWithSoft()
@@ -168,12 +182,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
 		}
         */
         if (marker.id == target_id) {
-            ROS_INFO("target detected");
             double q_marker[4], euler_marker[3];
-
-            markerPosition[0] = marker.pose.pose.position.x;
-            markerPosition[1] = marker.pose.pose.position.y;
-            markerPosition[2] = marker.pose.pose.position.z;
 
             q_marker[1] = marker.pose.pose.orientation.x;
             q_marker[2] = marker.pose.pose.orientation.y;
@@ -186,19 +195,24 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerOrientation[1] = euler_marker[1];
             markerOrientation[2] = euler_marker[2];
 
+            markerPosition[0] = marker.pose.pose.position.x;
+            markerPosition[1] = marker.pose.pose.position.y;
+            markerPosition[2] = marker.pose.pose.position.z;
+
+            
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
             markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
 
             getAnglesFromRotationTranslationMatrix(markerGlobalFrame, markerOrientation);
 
 
-            marker.pose.pose.position.x = markerGlobalFrame(0,3);
-            marker.pose.pose.position.y = markerGlobalFrame(1,3);
-            marker.pose.pose.position.z = markerGlobalFrame(2,3);
+            //marker.pose.pose.position.x = markerGlobalFrame(0,3);
+            //marker.pose.pose.position.y = markerGlobalFrame(1,3);
+            //marker.pose.pose.position.z = markerGlobalFrame(2,3);
 
-            //marker.pose.pose.position.x += (markerOffset[0])*cos(markerOrientation[2]) - (markerOffset[1])*sin(markerOrientation[2]);
-            //marker.pose.pose.position.y +=  (markerOffset[0])*sin(markerOrientation[2]) + (markerOffset[1])*cos(markerOrientation[2]);
-            //marker.pose.pose.position.z += markerOffset[2];
+            marker.pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
+            marker.pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
+            marker.pose.pose.position.z = markerGlobalFrame(2,3);
 
             marker.pose.pose.orientation.x = markerOrientation[0];
             marker.pose.pose.orientation.y = markerOrientation[1];

@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   private_node_handle_.param("marker_offset_x", markerOffset[0], double(0));
   private_node_handle_.param("marker_offset_y", markerOffset[1], double(0));
   private_node_handle_.param("marker_offset_z", markerOffset[2], double(0));
-  private_node_handle_.param("soft_data_vector_length", v_length, int(200));
+  private_node_handle_.param("soft_data_vector_length", v_length, int(100));
   private_node_handle_.param("odometry_callback", odometry_callback, std::string("/euroc3/msf_core/odometry"));
   private_node_handle_.param("cam2imuTf", cam2imuTf, std::string("/parameters/cam2imu.yaml"));
 
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
-  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose_k", 1);
+  ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/pose_f", 1);
   ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
 
@@ -63,18 +63,18 @@ int main(int argc, char **argv)
   ros::Rate r(20);
 
   ROS_INFO("Setting target marker id %d \n", marker_id_target);
-mtracker->setAlignedFlag(true);
+
   // Main loop.
   while (n.ok())
   {
 	  ros::spinOnce();
 
     ros::Duration timeDiff = mtracker->markerPointStamped.header.stamp - mtracker->softData.header.stamp;
-    std::cout<<timeDiff<<std::endl;
 
     if (fabs(timeDiff.toSec()) < 0.06 && meas_number<v_length)
     {
       meas_number++;
+      std::cout<<meas_number<<std::endl;
 
       diff_x = mtracker->softData.transform.translation.x - mtracker->markerPointStamped.point.x;
       diff_y = mtracker->softData.transform.translation.y - mtracker->markerPointStamped.point.y;
