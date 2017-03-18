@@ -1,18 +1,19 @@
 <launch>
-    <arg name="marker_size" default="8" />
+    <arg name="marker_size" default="7.5" />
     <arg name="target_id" default="5" />
     <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
     <arg name="max_track_error" default="1" />  <!--0.2 -->
     <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
     <arg name="cam_info_topic" default="/euroc3/cam3/info" />	
     <arg name="output_frame" default="/cam3" />
+    <arg name="frequency" default="20" />
     <arg name="namespace" default="euroc3" />
 
     <!--include file="$(find ar_marker_client)/launch/usb_cam.launch"/-->
     
     <node name="euroc_cam_info_publisher" pkg="ar_marker_client" type="cam_info_publisher.py"/>
     
-    <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" ns="$(arg namespace)" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)"/>
+    <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" ns="$(arg namespace)" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg frequency)"/>
     
     <include file="$(find ar_marker_client)/launch/multi_marker_tracker.launch">
         <arg name="marker_id_target" value="$(arg target_id)"/>

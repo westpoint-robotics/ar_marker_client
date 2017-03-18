@@ -21,11 +21,13 @@ int main(int argc, char **argv)
   std::string camera_frame("cam3");  // todo, add as a param
   std::vector<int> marker_ids;
   //todo read marker ids from rosparam
+  marker_ids.push_back(12);
   marker_ids.push_back(10);
   marker_ids.push_back(5);
+  marker_ids.push_back(11);
 
   std::string path = ros::package::getPath("ar_marker_client");
-  ROS_INFO("Readinf ros params");
+  ROS_INFO("Reading ros params");
   ros::NodeHandle private_node_handle_("~");
   //private_node_handle_.param("marker_id_usv", marker_id_usv, int(1));
   private_node_handle_.param("marker_id_target", marker_id_target, int(2));

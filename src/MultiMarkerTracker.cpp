@@ -25,7 +25,7 @@ MultiMarkerTracker::MultiMarkerTracker() {
     markerPositionOld[1] = 0;
     markerPositionOld[2] = 0;
     first_meas = 0;
-    min_detection_count = 10;
+    min_detection_count = 15;
 }
 
 MultiMarkerTracker::~MultiMarkerTracker() {
@@ -198,7 +198,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         */
     }
     else {
-            ROS_INFO("Detected unexpected marker id = %d", marker.id);
+            //ROS_INFO("Detected unexpected marker id = %d", marker.id);
     }
   }
 
@@ -213,14 +213,21 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
               if (!marker_frame_added[marker_ids[i]]) {
                   if (isMainMarker(marker_ids[i])) {
-                    marker_frame_added[marker_ids[i]] = true;
+
+                      // publish zero transform to cam3
+                      tf::Vector3 zero_origin(0,0,0);
+                      tf::Quaternion unit_quaternion(0,0,0,1);
+                      tf_transform.setOrigin( zero_origin);
+                      tf_transform.setRotation( unit_quaternion);
+                      tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
+
+                      marker_frame_added[marker_ids[i]] = true;
                   }
                   else if (marker_detected[marker_ids[i]] &&  (marker_detected_counter[marker_ids[i]] > min_detection_count)) {
                     // add tf betweer marker and main marker frame
                       tf::StampedTransform transform_stamped;
                       try {
-                        tf_listener.lookupTransform(marker_frames_corrected[marker_base_frame_id].c_str(), marker_frames_corrected[marker_ids[i]].c_str(),
-                        ros::Time(0), transform_stamped);
+                        tf_listener.lookupTransform(marker_frames_corrected[marker_ids[i]].c_str(), marker_frames_corrected[marker_base_frame_id].c_str(), ros::Time(0), transform_stamped);
                       }
                       catch (tf::TransformException &ex) {
                          ROS_ERROR("%s",ex.what());
@@ -253,19 +260,32 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
       if (marker_detected[marker_ids[i]] && marker_frame_added[marker_ids[i]]) {
 
-          tf_listener.lookupTransform(camera_frame.c_str(), marker_frames_corrected[marker_ids[i]].c_str(),ros::Time(0), marker_to_uav_transform);
-          uav_to_marker_transform = marker_to_uav_transform.inverse();
+          try {
+            tf_listener.lookupTransform(marker_frames_corrected[marker_ids[i]].c_str(), camera_frame.c_str(), ros::Time(0), marker_to_uav_transform);
+            uav_to_marker_transform = marker_to_uav_transform.inverse();
+          }
+          catch (tf::TransformException &ex) {
+             ROS_ERROR("%s",ex.what());
+             continue;
+          }
 
-          tf_listener.lookupTransform(marker_frames[marker_ids[0]].c_str(), marker_frames[marker_ids[i]], ros::Time(0), marker_to_marker_transform);
-          uav_to_marker_position = marker_to_marker_transform(uav_to_marker_transform.getOrigin());
-          uav_to_marker_orientation = uav_to_marker_transform.getRotation() * marker_to_marker_transform.getRotation();
+          try {
+            tf_listener.lookupTransform(marker_frames[marker_ids[i]], marker_frames[marker_ids[0]].c_str(), ros::Time(0), marker_to_marker_transform);
+            uav_to_marker_position = marker_to_marker_transform(uav_to_marker_transform.getOrigin());
+            uav_to_marker_orientation = uav_to_marker_transform.getRotation() * marker_to_marker_transform.getRotation();
 
-          uav_pose[marker_ids[i]].pose.position.x = uav_to_marker_position.getX();
-          uav_pose[marker_ids[i]].pose.position.y = uav_to_marker_position.getY();
-          uav_pose[marker_ids[i]].pose.position.z = uav_to_marker_position.getZ();
-          tf::quaternionTFToMsg(uav_to_marker_orientation, uav_pose[marker_ids[i]].pose.orientation);
-          uav_pose[marker_ids[i]].header.stamp = ros::Time::now();
-          uav_pose_publishers[marker_ids[i]].publish(uav_pose[marker_ids[i]]);
+            uav_pose[marker_ids[i]].pose.position.x = uav_to_marker_position.getX();
+            uav_pose[marker_ids[i]].pose.position.y = uav_to_marker_position.getY();
+            uav_pose[marker_ids[i]].pose.position.z = uav_to_marker_position.getZ();
+            tf::quaternionTFToMsg(uav_to_marker_orientation, uav_pose[marker_ids[i]].pose.orientation);
+            uav_pose[marker_ids[i]].header.stamp = ros::Time::now();
+            uav_pose_publishers[marker_ids[i]].publish(uav_pose[marker_ids[i]]);
+          }
+          catch (tf::TransformException &ex) {
+             ROS_ERROR("%s",ex.what());
+             continue;
+          }
+
       }
 
   }
