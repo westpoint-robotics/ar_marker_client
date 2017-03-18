@@ -23,8 +23,8 @@ int main(int argc, char **argv)
   //todo read marker ids from rosparam
   marker_ids.push_back(12);
   marker_ids.push_back(10);
-  //marker_ids.push_back(5);
-  //marker_ids.push_back(11);
+  marker_ids.push_back(5);
+  marker_ids.push_back(11);
 
   std::string path = ros::package::getPath("ar_marker_client");
   ROS_INFO("Reading ros params");
