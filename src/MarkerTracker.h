@@ -22,6 +22,7 @@
 #include "geometry_msgs/PointStamped.h"
  #include <ros/package.h>
 #include <sensor_msgs/Imu.h>
+#include <geometry_msgs/TransformStamped.h>
 
 class MarkerTracker {
 public:
@@ -30,12 +31,15 @@ public:
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
     void imuCallback(const sensor_msgs::Imu &msg);
+    void softCallback(const geometry_msgs::TransformStamped &msg);
     void quaternion2euler(double *quaternion, double *euler);
     void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *orientationEuler, double *position);
     void getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *angles);
     void LoadParameters(std::string file);
+    bool isAlignedMarkerWithSoft();
+    void setAlignedFlag(bool flag);
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
 
@@ -65,7 +69,6 @@ public:
         markerOffset[1] = offset[1];
         markerOffset[2] = offset[2];
     }
-
     /*
 	void setPubUsvPose(ros::Publisher pubUsvPose) {
 		pub_usv_pose = pubUsvPose;
@@ -81,6 +84,7 @@ public:
     */
 
     int first_meas;
+    int soft_data_vector_length;
     //int usv_id;
 	int target_id;
 	double qGlobalFrame[4], positionGlobalFrame[3], eulerGlobalFrame[3];
@@ -88,11 +92,14 @@ public:
     double markerPositionOld[3];
     double markerOffset[3];
     double filt_const;
+    bool initializationFlag;
 	Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     //ros::Publisher pub_usv_pose;
 	ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
     geometry_msgs::PointStamped markerPointStamped;
+    geometry_msgs::TransformStamped softData;
+    bool alignedFlag;
 
 };
 
