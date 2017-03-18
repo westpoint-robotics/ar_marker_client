@@ -113,6 +113,7 @@ public:
     std::map<int, geometry_msgs::PoseStamped> marker_poses_old;
     std::map<int, geometry_msgs::PoseStamped> uav_pose;
     std::map<int, geometry_msgs::PoseStamped> uav_pose_old;
+    std::map<int, geometry_msgs::PoseStamped> uav_relative_pose;
     std::map<int, std::string> marker_frames_corrected;
     std::map<int, std::string> marker_frames;
     std::map<int, bool> marker_detected;
@@ -125,7 +126,8 @@ public:
     ros::Publisher pub_target_pose_f;
     ros::Publisher pub_marker0;
     std::map<int,ros::Publisher> uav_pose_publishers;
-    std::map<int,ros::Publisher> uav_marker_pose_publishers;
+    std::map<int,ros::Publisher> uav_relative_pose_publishers;
+    std::map<int,ros::Publisher> marker_corrected_pose_publishers;
     geometry_msgs::PointStamped markerPointStamped;
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;
