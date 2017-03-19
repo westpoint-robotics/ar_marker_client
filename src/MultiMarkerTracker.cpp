@@ -133,7 +133,7 @@ void MultiMarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
   positionGlobalFrame[2] = 0;
 
   quaternion2euler(qGlobalFrame, eulerGlobalFrame);
-  //eulerGlobalFrame[2] = 0.0; //set imu yaw to 0
+  eulerGlobalFrame[2] = 0.0; //set imu yaw to 0
 
   getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
 }
@@ -397,7 +397,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
   }
 
-  ROS_INFO("Markers %d, filtered markers %d", markers_detected, filtered_markers_detected);
+  //ROS_INFO("Markers %d, filtered markers %d", markers_detected, filtered_markers_detected);
 
   if (filtered_markers_detected > 0) {
     uav_position_filtered.point.x = uav_position_filtered.point.x / filtered_markers_detected;

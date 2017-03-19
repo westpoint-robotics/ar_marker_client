@@ -1,5 +1,5 @@
 marker_ids: [12, 10, 5, 11]
-min_marker_detection: 5
+min_marker_detection: 15
 rate_filt_velocity: 20
 rate_filt_time: 0.1
 cam2imuTf: "/parameters/cam2imu.yaml"

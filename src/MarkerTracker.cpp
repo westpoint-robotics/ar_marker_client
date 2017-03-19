@@ -138,6 +138,7 @@ void MarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
   positionGlobalFrame[2] = 0;
 
   quaternion2euler(qGlobalFrame, eulerGlobalFrame);
+  eulerGlobalFrame[2] = 0.0;
 
   getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
 }
