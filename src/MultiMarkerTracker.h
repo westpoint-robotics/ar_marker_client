@@ -52,65 +52,16 @@ public:
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
 
-    void setPubTargetPose(ros::Publisher pubTargetPose) {
-            pub_target_pose = pubTargetPose;
-    }
-
-    void setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
-        pub_target_pose_f = pubTargetPose_f;
-    }
-
-    void setPubDetectionFlag(ros::Publisher fPub)
-    {
-    	pubDetectionFlag = fPub;
-    }
-
-    int getTargetId() const {
-            return target_id;
-    }
-
-    void setTargetId(int targetId) {
-            target_id = targetId;
-    }
-
-    void setMarkerOffset(double *offset) {
-        markerOffset[0] = offset[0];
-        markerOffset[1] = offset[1];
-        markerOffset[2] = offset[2];
-    }
-
-    void setMarkerIds(std::vector<int> marker_ids) {
-      this->marker_ids = marker_ids;
-      for(std::vector<int>::size_type i = 0; i != this->marker_ids.size(); i++) {
-          this->marker_detected_counter[this->marker_ids[i]] = 0;
-          this->marker_frame_added[this->marker_ids[i]] = false;
-          marker_frames[this->marker_ids[i]] = std::string("marker")
-                                               + boost::lexical_cast<std::string>(marker_ids[i]);
-          marker_frames_corrected[this->marker_ids[i]] = std::string("ar_marker_")
-                                                         + boost::lexical_cast<std::string>(marker_ids[i])
-                                                         + std::string("_corrected");
-      }
-    }
-
-    void setCameraFrame(std::string camera_frame) {
-      this->camera_frame = camera_frame;
-    }
-
-    void setPubMarker0(ros::Publisher pub) {
-        pub_marker0 = pub;
-     }
-
-    void setRateFiltVelocity(double velocity) {
-        rate_filt_max_velocity = velocity;
-    }
-
-    void setRateFiltTime(double time) {
-        rate_filt_max_delta_time = time;
-    }
-
-    void setMinMarkerDetection(int detection_number) {
-        min_detection_count = detection_number;
-    }
+    void setPubTargetPose(ros::Publisher pubTargetPose);
+    void setPubTargetPose_f(ros::Publisher pubTargetPose_f);
+    void setPubDetectionFlag(ros::Publisher fPub);
+    void setMarkerOffset(double *offset);
+    void setMarkerIds(std::vector<int> marker_ids);
+    void setCameraFrame(std::string camera_frame);
+    void setPubMarker0(ros::Publisher pub);
+    void setRateFiltVelocity(double velocity);
+    void setRateFiltTime(double time);
+    void setMinMarkerDetection(int detection_number);
 
     int first_meas;
     //int usv_id;

@@ -419,6 +419,59 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
   */
 }
 
+void MultiMarkerTracker::setPubTargetPose(ros::Publisher pubTargetPose) {
+        pub_target_pose = pubTargetPose;
+}
+
+void MultiMarkerTracker::setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
+    pub_target_pose_f = pubTargetPose_f;
+}
+
+void MultiMarkerTracker::setPubDetectionFlag(ros::Publisher fPub)
+{
+    pubDetectionFlag = fPub;
+}
+
+
+void MultiMarkerTracker::setMarkerOffset(double *offset) {
+    markerOffset[0] = offset[0];
+    markerOffset[1] = offset[1];
+    markerOffset[2] = offset[2];
+}
+
+void MultiMarkerTracker::setMarkerIds(std::vector<int> marker_ids) {
+  this->marker_ids = marker_ids;
+  for(std::vector<int>::size_type i = 0; i != this->marker_ids.size(); i++) {
+      this->marker_detected_counter[this->marker_ids[i]] = 0;
+      this->marker_frame_added[this->marker_ids[i]] = false;
+      marker_frames[this->marker_ids[i]] = std::string("marker")
+                                           + boost::lexical_cast<std::string>(marker_ids[i]);
+      marker_frames_corrected[this->marker_ids[i]] = std::string("ar_marker_")
+                                                     + boost::lexical_cast<std::string>(marker_ids[i])
+                                                     + std::string("_corrected");
+  }
+}
+
+void MultiMarkerTracker::setCameraFrame(std::string camera_frame) {
+  this->camera_frame = camera_frame;
+}
+
+void MultiMarkerTracker::setPubMarker0(ros::Publisher pub) {
+    pub_marker0 = pub;
+ }
+
+void MultiMarkerTracker::setRateFiltVelocity(double velocity) {
+    rate_filt_max_velocity = velocity;
+}
+
+void MultiMarkerTracker::setRateFiltTime(double time) {
+    rate_filt_max_delta_time = time;
+}
+
+void MultiMarkerTracker::setMinMarkerDetection(int detection_number) {
+    min_detection_count = detection_number;
+}
+
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
   //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) != marker_ids.end());
   for(int i=0; i < marker_ids.size(); i++) {
