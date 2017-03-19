@@ -566,11 +566,13 @@ geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_
 
   uav_pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
   uav_pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
-  uav_pose.pose.position.z = markerGlobalFrame(2,3);
+  uav_pose.pose.position.z = -markerGlobalFrame(2,3);
 
-  uav_pose.pose.position.x = uav_pose.pose.position.x;// + markerOffset[0];
-  uav_pose.pose.position.y = uav_pose.pose.position.y; // + markerOffset[1];
-  uav_pose.pose.position.z = -uav_pose.pose.position.z;// + markerOffset[2];
+  if (use_soft) {
+    uav_pose.pose.position.x += markerOffset[0];
+    uav_pose.pose.position.y += markerOffset[1];
+    uav_pose.pose.position.z += markerOffset[2];
+  }
 
 
   Eigen::Matrix3d rotation_matrix = markerGlobalFrame.block<3,3>(0,0);
