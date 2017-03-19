@@ -139,6 +139,8 @@ void MarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
 
   quaternion2euler(qGlobalFrame, eulerGlobalFrame);
 
+  eulerGlobalFrame[2]=0;
+
   getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
 }
 
@@ -209,6 +211,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             //marker.pose.pose.position.x = markerGlobalFrame(0,3);
             //marker.pose.pose.position.y = markerGlobalFrame(1,3);
             //marker.pose.pose.position.z = markerGlobalFrame(2,3);
+            std::cout<<-markerOrientation[2]<<std::endl;
 
             marker.pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
             marker.pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
