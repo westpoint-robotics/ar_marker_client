@@ -1,14 +1,9 @@
 <launch>
     
-    <arg name="marker_id_target" default="10"/>
     <arg name="namespace" default="euroc" />
     
     <node name="multi_marker_tracker" pkg="ar_marker_client" type="multi_marker_tracker_node" ns="$(arg namespace)" output="screen" >
-        <param name="marker_id_target" value="$(arg marker_id_target)"/>
-        <param name="marker_offset_x" value="0"/>
-        <param name="marker_offset_y" value="0"/>
-        <param name="marker_offset_z" value="0"/>
-        <param name="cam2imuTf" value="/parameters/cam2imu.yaml"/>
+        <rosparam command="load" file="$(find ar_marker_client)/cfg/multi_marker_tracker.yaml" />
     </node>
     
 </launch>

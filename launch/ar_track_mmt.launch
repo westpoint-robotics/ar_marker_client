@@ -16,7 +16,6 @@
     <node name="ar_track_alvar" pkg="ar_track_alvar" respawn="false" output="screen" type="individualMarkersNoKinect" ns="$(arg namespace)" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg frequency)"/>
     
     <include file="$(find ar_marker_client)/launch/multi_marker_tracker.launch">
-        <arg name="marker_id_target" value="$(arg target_id)"/>
         <arg name="namespace" value="$(arg namespace)"/>
     </include>
    

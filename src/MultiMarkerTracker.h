@@ -100,6 +100,18 @@ public:
         pub_marker0 = pub;
      }
 
+    void setRateFiltVelocity(double velocity) {
+        rate_filt_max_velocity = velocity;
+    }
+
+    void setRateFiltTime(double time) {
+        rate_filt_max_delta_time = time;
+    }
+
+    void setMinMarkerDetection(int detection_number) {
+        min_detection_count = detection_number;
+    }
+
     int first_meas;
     //int usv_id;
     int target_id;
@@ -109,6 +121,11 @@ public:
     double markerPositionOld[3];
     double markerOffset[3];
     double filt_const;
+    double rate_filt_max_velocity;
+    double rate_filt_max_delta_time;
+    geometry_msgs::PointStamped uav_position;
+    geometry_msgs::PointStamped uav_position_filtered;
+    geometry_msgs::PointStamped uav_position_filtered_old;
     std::map<int, geometry_msgs::PoseStamped> marker_poses;
     std::map<int, geometry_msgs::PoseStamped> marker_poses_old;
     std::map<int, geometry_msgs::PoseStamped> uav_pose;
