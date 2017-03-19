@@ -249,7 +249,13 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                       tf_transform.setRotation( unit_quaternion);
                       tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
 
+                      tf::StampedTransform tf_stamped;
+                      tf_stamped.setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
+                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
                       marker_frame_added[marker_ids[i]] = true;
+                      ROS_INFO("Adding marker frame %d", marker_ids[i]);
                   }
                   else if (marker_detected[marker_ids[i]] &&  (marker_detected_counter[marker_ids[i]] > min_detection_count)) {
                     // add tf betweer marker and main marker frame
@@ -270,10 +276,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                          ROS_ERROR("%s",ex.what());
                          continue;
                       }
-                                           tf_transform.setOrigin( transform_stamped.getOrigin());
+
+                      tf_transform.setOrigin( transform_stamped.getOrigin());
                       tf_transform.setRotation( transform_stamped.getRotation());
                       tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), marker_frames[marker_base_frame_id].c_str(), marker_frames[marker_ids[i]].c_str()));
 
+                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].frame_id_ = marker_frames[marker_base_frame_id].c_str();
+                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
                       marker_frame_added[marker_ids[i]] = true;
                       ROS_INFO("Adding marker frame %d", marker_ids[i]);
                   }
@@ -345,7 +355,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
                 double dt = (uav_pose[marker_ids[i]].header.stamp.toSec() - uav_position_filtered_old.header.stamp.toSec());
                 // do the filtering only if get continuous markers
-                if (dt < rate_filt_max_delta_time) {
+                //if (dt < rate_filt_max_delta_time) {
                   double max_dl = dt * rate_filt_max_velocity;
                   if ((fabs( uav_pose[marker_ids[i]].pose.position.x - uav_position_filtered_old.point.x) < max_dl) &&
                       (fabs( uav_pose[marker_ids[i]].pose.position.y - uav_position_filtered_old.point.y) < max_dl) &&
@@ -362,7 +372,8 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                       ROS_INFO("Ignoring measurement from marker %d", marker_ids[i]);
                   }
 
-                }
+                //}
+                  /*
                 else {
                  // we receive the marker pose after a while, just use it in measurement
                     uav_position_filtered.point.x += uav_pose[marker_ids[i]].pose.position.x;
@@ -371,6 +382,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                     uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
                     filtered_markers_detected++;
                 }
+                */
 
             }
 
@@ -417,6 +429,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
       pubDetectionFlag.publish(detection_flag_msg);
   }
   */
+
+  // publish tranform between markers
+  for (int i = 0; i < marker_ids.size(); i++) {
+      if (marker_frame_added[marker_ids[i]]) {
+        marker_transform_stamped[marker_ids[i]].stamp_ = ros::Time::now();
+        tf_broadcaster.sendTransform(marker_transform_stamped[marker_ids[i]]);
+      }
+  }
 }
 
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {

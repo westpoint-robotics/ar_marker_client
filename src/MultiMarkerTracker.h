@@ -24,6 +24,7 @@
 #include <sensor_msgs/Imu.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 #include <boost/lexical_cast.hpp>
 #include <stdio.h>
 
@@ -136,6 +137,7 @@ public:
     std::map<int, bool> marker_detected;
     std::map<int, int> marker_detected_counter;
     std::map<int, bool> marker_frame_added;
+    std::map<int, tf::StampedTransform> marker_transform_stamped;
     int min_detection_count;
     std::string main_marker_frame;
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
