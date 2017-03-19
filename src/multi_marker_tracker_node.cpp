@@ -34,7 +34,6 @@ int main(int argc, char **argv)
   //private_node_handle_.param("odometry_callback", odometry_callback, std::string("/euroc3/msf_core/odometry"));
   private_node_handle_.getParam("cam2imuTf", cam2imuTf);
   private_node_handle_.getParam("marker_ids", marker_ids);
-  private_node_handle_.getParam("cam2imuTf", cam2imuTf);
   private_node_handle_.getParam("rate_filt_velocity", rate_filt_velocity);
   private_node_handle_.getParam("rate_filt_time", rate_filt_time);
   private_node_handle_.getParam("camera_frame", camera_frame);
@@ -47,9 +46,11 @@ int main(int argc, char **argv)
       ROS_INFO("Marker %d, id %d", i, marker_ids[i]);
   }
 
-  std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
+  ROS_INFO("Parameters, %s, %s, %.2f, %.2f,  %d ", cam2imuTf.c_str(), camera_frame.c_str(), rate_filt_velocity, rate_filt_time, min_marker_detection);
 
-  std::cout << path << std::endl;
+  //std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
+
+  //std::cout << path << std::endl;
   //mtracker->LoadParameters(path + cam2imuTf);
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MultiMarkerTracker::ar_track_alvar_sub, mtracker);

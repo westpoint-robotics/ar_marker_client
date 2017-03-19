@@ -224,54 +224,6 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         marker_pose.header.stamp = marker.header.stamp;
         marker_corrected_pose_publishers[marker.id].publish(marker_pose);
 
-        //publish za poseition_update
-        /*
-        markerPointStamped.header.stamp = ros::Time::now();
-        markerPointStamped.header.frame_id = "fcu";
-        markerPointStamped.point.x = marker.pose.pose.position.x;
-        markerPointStamped.point.y = marker.pose.pose.position.y;
-        markerPointStamped.point.z = marker.pose.pose.position.z;
-        pub_target_pose.publish(markerPointStamped);
-
-        //pub_target_pose.publish(marker.pose);
-        detection_flag_msg.data = 1;
-        pubDetectionFlag.publish(detection_flag_msg);
-        packageDetectedFlag = true;
-
-        if (first_meas == 0) {
-            first_meas = 1;
-            markerPositionOld[0] = marker.pose.pose.position.x;
-            markerPositionOld[1] = marker.pose.pose.position.y;
-            markerPositionOld[2] = marker.pose.pose.position.z;
-        }
-
-        marker.pose.pose.position.x = filt_const * markerPositionOld[0] + (1-filt_const) * marker.pose.pose.position.x;
-        marker.pose.pose.position.y = filt_const * markerPositionOld[1] + (1-filt_const) * marker.pose.pose.position.y;
-        marker.pose.pose.position.z = filt_const * markerPositionOld[2] + (1-filt_const) * marker.pose.pose.position.z;
-        pub_target_pose_f.publish(marker.pose);
-        markerPositionOld[0] = marker.pose.pose.position.x;
-        markerPositionOld[1] = marker.pose.pose.position.y;
-        markerPositionOld[2] = marker.pose.pose.position.z;
-        */
-        if (isMainMarker(marker.id)) {
-
-            /*
-            markerPointStamped.header.stamp = ros::Time::now();
-            markerPointStamped.header.frame_id = "cam3";
-            markerPointStamped.point.x = marker.pose.pose.position.x;
-            markerPointStamped.point.y = marker.pose.pose.position.y;
-            markerPointStamped.point.z = marker.pose.pose.position.z;
-            pub_target_pose.publish(markerPointStamped);
-
-            marker.pose.pose.orientation.x = markerOrientation[0];
-            marker.pose.pose.orientation.y = markerOrientation[1];
-            marker.pose.pose.orientation.z = markerOrientation[2];
-            marker.pose.pose.orientation.w = 0;
-            marker.pose.header.stamp = ros::Time::now();
-            pub_target_pose_f.publish(marker.pose);
-
-            */
-        }
     }
     else {
             //ROS_INFO("Detected unexpected marker id = %d", marker.id);
@@ -335,14 +287,15 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     }
   }
 
-  tf::StampedTransform marker_to_marker_transform, marker_to_uav_transform;
+  tf::StampedTransform marker_to_marker_transform;
   tf::Transform uav_to_marker_transform, marker_to_base_marker_tf, uav_to_base_marker_tf;
-  tf::Vector3 uav_to_marker_position;
-  tf::Quaternion uav_to_marker_orientation;
 
   uav_position.point.x = 0;
   uav_position.point.y = 0;
   uav_position.point.z = 0;
+  uav_position_filtered.point.x = 0;
+  uav_position_filtered.point.y = 0;
+  uav_position_filtered.point.z = 0;
   int markers_detected = 0;
   int filtered_markers_detected = 0;
 
@@ -377,25 +330,31 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
             uav_position.point.x += uav_pose[marker_ids[i]].pose.position.x;
             uav_position.point.y += uav_pose[marker_ids[i]].pose.position.y;
             uav_position.point.z += uav_pose[marker_ids[i]].pose.position.z;
-            uav_position.header.stamp =  uav_relative_pose[marker_ids[i]].header.stamp;
+            uav_position.header.stamp =  uav_pose[marker_ids[i]].header.stamp;
             markers_detected++;
 
             // rate filter
             if (first_meas == 0) {
-                uav_position_filtered_old = uav_position;
+                uav_position_filtered_old.point.x = uav_pose[marker_ids[i]].pose.position.x;
+                uav_position_filtered_old.point.y = uav_pose[marker_ids[i]].pose.position.y;
+                uav_position_filtered_old.point.z = uav_pose[marker_ids[i]].pose.position.z;
+                uav_position_filtered_old.header.stamp = uav_pose[marker_ids[i]].header.stamp;
                 first_meas = 1;
             }
             else {
 
-                double dt = (uav_position.header.stamp.toSec() - uav_position_filtered_old.header.stamp.toSec());
+                double dt = (uav_pose[marker_ids[i]].header.stamp.toSec() - uav_position_filtered_old.header.stamp.toSec());
                 // do the filtering only if get continuous markers
                 if (dt < rate_filt_max_delta_time) {
                   double max_dl = dt * rate_filt_max_velocity;
-                  if ((fabs( uav_position.point.x - uav_position_filtered_old.point.x) < max_dl) &&
-                      (fabs( uav_position.point.y - uav_position_filtered_old.point.y) < max_dl) &&
-                      (fabs( uav_position.point.z - uav_position_filtered_old.point.z) < max_dl)) {
+                  if ((fabs( uav_pose[marker_ids[i]].pose.position.x - uav_position_filtered_old.point.x) < max_dl) &&
+                      (fabs( uav_pose[marker_ids[i]].pose.position.y - uav_position_filtered_old.point.y) < max_dl) &&
+                      (fabs( uav_pose[marker_ids[i]].pose.position.z - uav_position_filtered_old.point.z) < max_dl)) {
                       // valid marker
-                      uav_position_filtered = uav_position;
+                      uav_position_filtered.point.x += uav_pose[marker_ids[i]].pose.position.x;
+                      uav_position_filtered.point.y += uav_pose[marker_ids[i]].pose.position.y;
+                      uav_position_filtered.point.z += uav_pose[marker_ids[i]].pose.position.z;
+                      uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
                       filtered_markers_detected++;
 
                   }
@@ -406,7 +365,10 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                 }
                 else {
                  // we receive the marker pose after a while, just use it in measurement
-                    uav_position_filtered = uav_position;
+                    uav_position_filtered.point.x += uav_pose[marker_ids[i]].pose.position.x;
+                    uav_position_filtered.point.y += uav_pose[marker_ids[i]].pose.position.y;
+                    uav_position_filtered.point.z += uav_pose[marker_ids[i]].pose.position.z;
+                    uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
                     filtered_markers_detected++;
                 }
 
@@ -434,6 +396,8 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     pub_target_pose.publish(uav_position);
 
   }
+
+  ROS_INFO("Markers %d, filtered markers %d", markers_detected, filtered_markers_detected);
 
   if (filtered_markers_detected > 0) {
     uav_position_filtered.point.x = uav_position_filtered.point.x / filtered_markers_detected;
