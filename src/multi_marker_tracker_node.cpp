@@ -18,9 +18,14 @@ int main(int argc, char **argv)
   double markerOffset[3] = {0.0};
   double rate_filt_velocity;
   double rate_filt_time;
+  double mean_x = 0, mean_y = 0, mean_z = 0;
+  double diff_x = 0, diff_y = 0, diff_z = 0;
   std::string odometry_callback, cam2imuTf;
   std::string camera_frame;  // todo, add as a param
   std::vector<int> marker_ids;
+  int filter_length;
+  int meas_number = 0;
+  bool use_soft;
   //todo read marker ids from rosparam
   //marker_ids.push_back(12);
   //marker_ids.push_back(10);
@@ -38,7 +43,8 @@ int main(int argc, char **argv)
   private_node_handle_.getParam("rate_filt_time", rate_filt_time);
   private_node_handle_.getParam("camera_frame", camera_frame);
   private_node_handle_.getParam("min_marker_detection", min_marker_detection);
-
+  private_node_handle_.param("soft_data_vector_length", filter_length, int(100));
+  private_node_handle_.param("use_soft", use_soft, false);
 
   ROS_INFO("Number of marker ids %d", (int)marker_ids.size());
 
@@ -56,6 +62,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MultiMarkerTracker::ar_track_alvar_sub, mtracker);
   //ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MultiMarkerTracker::odometryCallback, mtracker);
   ros::Subscriber imu_message = n.subscribe("/euroc3/imu", 1, &MultiMarkerTracker::imuCallback, mtracker);
+  ros::Subscriber soft_message = n.subscribe("/euroc3/soft/soft_transform", 1, &MultiMarkerTracker::softCallback, mtracker);
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
@@ -76,21 +83,53 @@ int main(int argc, char **argv)
   mtracker->setRateFiltTime(rate_filt_time);
   mtracker->setRateFiltVelocity(rate_filt_velocity);
   mtracker->setMinMarkerDetection(min_marker_detection);
+  mtracker->setUseSoftFlag(use_soft);
   ROS_INFO("Initializing publisher.");
   mtracker->initUavPosePublishers(n);
 
   //mtracker->setUsvId(marker_id_usv);
   //mtracker->setTargetId(marker_id_target);
   // Tell ROS how fast to run this node.
-  ros::Rate r(30);
+  ros::Rate r(100);
 
   //ROS_INFO("Setting target marker id %d \n", marker_id_target);
 
   // Main loop.
   while (n.ok())
   {
-	  ros::spinOnce();
-	  r.sleep();
+      ros::spinOnce();
+
+      if (mtracker->use_soft) {
+        if (mtracker->newSoftData && mtracker->newBaseMarkerData) {
+
+          ros::Duration timeDiff = mtracker->uav_relative_pose[marker_ids[0]].header.stamp - mtracker->softData.header.stamp;
+
+          if (fabs(timeDiff.toSec()) < 0.16 && meas_number<filter_length) {
+              meas_number++;
+              std::cout<<meas_number<<std::endl;
+
+              diff_x = mtracker->softData.transform.translation.x - mtracker->uav_relative_pose[marker_ids[0]].pose.position.x;
+              diff_y = mtracker->softData.transform.translation.y - mtracker->uav_relative_pose[marker_ids[0]].pose.position.y;
+              diff_z = mtracker->softData.transform.translation.z - mtracker->uav_relative_pose[marker_ids[0]].pose.position.z;
+
+              mean_x += diff_x/filter_length;
+              mean_y += diff_y/filter_length;
+              mean_z += diff_z/filter_length;
+
+              if (meas_number >= filter_length){
+                markerOffset[0] = mean_x;
+                markerOffset[1] = mean_y;
+                markerOffset[2] = mean_z;
+                mtracker->setMarkerOffset(markerOffset);
+                mtracker->setAlignedFlag(true);
+                std::cout<<"x: "<<markerOffset[0]<<"y: "<<markerOffset[1]<<"z: "<<markerOffset[2]<<std::endl;
+              }
+          }
+          mtracker->newSoftData = false;
+          mtracker->newBaseMarkerData = false;
+        }
+      }
+      r.sleep();
   }
 
   delete mtracker;

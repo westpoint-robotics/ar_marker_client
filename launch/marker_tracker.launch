@@ -1,10 +1,26 @@
 <launch>
-	
-    <arg name="marker_id_target" default="11"/>
-    <arg name="namespace" default="euroc" />
-	
-	<node name="ar_marker_client" pkg="ar_marker_client" type="marker_tracker_node" ns="$(arg namespace)" >
-	    <param name="marker_id_target" value="$(arg marker_id_target)"/>
+  <arg name="marker_size" default="15"/>
+  <arg name="max_new_marker_error" default="0.1"/>
+  <arg name="max_track_error" default="1"/>
+  <arg name="cam_image_topic" default="/euroc3/cam3/image_raw"/>
+  <arg name="cam_info_topic" default="/euroc3/cam3/info"/>
+  <arg name="output_frame" default="cam3"/>
+  <arg name="freq" default="20"/>
+  
+<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg freq)">
+      <param name="capability_group" value="ParcelTracker"/>
     </node>
-	
+
+    <node name="marker_tracker" pkg="ar_marker_client" type="marker_tracker_node" output="screen">
+      <param name="marker_id_target" value="10"/>
+      <param name="marker_offset_x" value="0.0"/> <!-- 0.11 -->
+      <param name="marker_offset_y" value="0.0"/> <!-- 0.057 -->
+      <param name="marker_offset_z" value="0.0"/> <!-- 0.025 -->
+      <param name="cam2imuTf" value="/parameters/cam2imu.yaml"/>
+      <param name="capability_group" value="ParcelTracker"/>
+    </node>
+
+    <node name="cam_info_pub" pkg="ar_marker_client" type="cam_info_publisher.py">
+      <param name="capability_group" value="ParcelTracker"/>
+    </node>
 </launch>

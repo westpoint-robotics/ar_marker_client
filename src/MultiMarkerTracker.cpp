@@ -28,6 +28,11 @@ MultiMarkerTracker::MultiMarkerTracker() {
     min_detection_count = 15;
     rate_filt_max_velocity = 1;  // m/s
     rate_filt_max_delta_time = 0.1;
+    alignedFlag = false;
+    newSoftData = false;
+    newBaseMarkerData = false;
+    use_soft = false;
+
 }
 
 MultiMarkerTracker::~MultiMarkerTracker() {
@@ -142,6 +147,31 @@ void MultiMarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
 }
 
+void MultiMarkerTracker::softCallback(const geometry_msgs::TransformStamped &msg)
+{
+  //double soft_q[4], soft_euler[3];
+
+  //soft_q = msg.
+
+  //quaternion2euler(soft_q, soft_euler);
+
+  softData = msg;
+  newSoftData = true;
+  //soft_yaw = soft_euler[2];
+}
+
+bool MultiMarkerTracker::isAlignedMarkerWithSoft()
+{
+  return alignedFlag;
+}
+
+void MultiMarkerTracker::setAlignedFlag(bool flag)
+{
+  alignedFlag = flag;
+}
+
+
+
 void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
 
   int i;
@@ -203,6 +233,9 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         uav_relative_pose_publishers[marker.id].publish(uav_pose);
         uav_relative_pose[marker.id] = uav_pose;
 
+        if (isMainMarker(marker.id)) {
+            newBaseMarkerData = true;
+        }
 
         // publish corrected transform from cam to the detected marker
         tf::Transform marker_to_uav, uav_to_marker;
@@ -405,7 +438,15 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     uav_position.point.y = uav_position.point.y / markers_detected;
     uav_position.point.z = uav_position.point.z / markers_detected;
 
-    pub_target_pose.publish(uav_position);
+    if (use_soft) {
+      if (isAlignedMarkerWithSoft()) {
+        pub_target_pose.publish(uav_position);
+      }
+    }
+    else {
+        pub_target_pose.publish(uav_position);
+    }
+
 
   }
 
@@ -416,8 +457,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     uav_position_filtered.point.y = uav_position_filtered.point.y / filtered_markers_detected;
     uav_position_filtered.point.z = uav_position_filtered.point.z / filtered_markers_detected;
 
-    pub_target_pose_f.publish(uav_position_filtered);
-
+    if (use_soft) {
+      if (isAlignedMarkerWithSoft()) {
+         pub_target_pose_f.publish(uav_position_filtered);
+      }
+    }
+    else {
+        pub_target_pose_f.publish(uav_position_filtered);
+    }
     uav_position_filtered_old = uav_position_filtered;
 
   }
@@ -480,6 +527,10 @@ void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
   ROS_INFO("Initialized pose publishers");
 }
 
+void MultiMarkerTracker::setUseSoftFlag(bool flag) {
+  use_soft = flag;
+}
+
 geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker) {
 
   // input ar marker - position of the marker w.r.t the UAV camera
@@ -518,7 +569,7 @@ geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_
   uav_pose.pose.position.z = markerGlobalFrame(2,3);
 
   uav_pose.pose.position.x = uav_pose.pose.position.x;// + markerOffset[0];
-  uav_pose.pose.position.y = uav_pose.pose.position.y;// + markerOffset[1];
+  uav_pose.pose.position.y = uav_pose.pose.position.y; // + markerOffset[1];
   uav_pose.pose.position.z = -uav_pose.pose.position.z;// + markerOffset[2];
 
 
