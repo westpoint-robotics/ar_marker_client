@@ -144,6 +144,8 @@ public:
     std::map<int, int> marker_detected_counter;
     std::map<int, bool> marker_frame_added;
     std::map<int, tf::StampedTransform> marker_transform_stamped;
+    std::map<int, std::vector<tf::Transform> marker_transforms;
+    std::map<int, int> base_markers;
     int min_detection_count;
     std::string main_marker_frame;
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
