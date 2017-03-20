@@ -104,6 +104,10 @@ int main(int argc, char **argv)
 
       //ROS_INFO("Main loop.");
 
+      tf::Transform uavSoftPose;
+      tf::Transform uavMarkerPose;
+      std::vector<tf::Transform> softToMarkerTransforms;
+
       if (mtracker->use_soft) {
         if (mtracker->newSoftData && mtracker->newBaseMarkerData) {
 
@@ -112,6 +116,16 @@ int main(int argc, char **argv)
           if (fabs(timeDiff.toSec()) < 0.16 && meas_number<filter_length) {
               meas_number++;
               std::cout<<meas_number<<std::endl;
+
+              uavSoftPose = mtracker->softData.transform;
+              uavMarkerPose.setOrigin(tf::Vector3(mtracker->uav_relative_pose[marker_ids[0]].pose.position.x,
+                                                  mtracker->uav_relative_pose[marker_ids[0]].pose.position.y,
+                                                  mtracker->uav_relative_pose[marker_ids[0]].pose.position.z));
+              uavMarkerPose.setRotation(tf::Quaternion(mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.x,
+                                                       mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.y,
+                                                       mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.z,
+                                                       mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.w));
+
 
               diff_x = mtracker->softData.transform.translation.x - mtracker->uav_relative_pose[marker_ids[0]].pose.position.x;
               diff_y = mtracker->softData.transform.translation.y - mtracker->uav_relative_pose[marker_ids[0]].pose.position.y;

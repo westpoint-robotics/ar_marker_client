@@ -105,7 +105,8 @@ public:
     int min_detection_count;
     int marker_transform_samples_num;
     std::string main_marker_frame;
-    Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
+    Eigen::Matrix4d uav2cam, inertial2uav, markerTRMatrix, inertial2marker, UAV2Soft, UAVinMarkerFrame;
+    Eigen::Matrix4d cam2marker, marker2inertial;
     ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
     ros::Publisher pub_marker0;
