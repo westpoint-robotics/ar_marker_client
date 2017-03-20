@@ -67,7 +67,7 @@ public:
     void setPubTargetPose(ros::Publisher pubTargetPose);
     void setPubTargetPose_f(ros::Publisher pubTargetPose_f);
     void setPubDetectionFlag(ros::Publisher fPub);
-    void setMarkerOffset(double *offset);
+    void setMarkerOffset(tf::Transform softToMarker);
     void setMarkerIds(std::vector<int> marker_ids);
     void setCameraFrame(std::string camera_frame);
     void setPubMarker0(ros::Publisher pub);
@@ -118,6 +118,7 @@ public:
     tf::TransformBroadcaster tf_broadcaster;
     tf::TransformListener tf_listener;
     geometry_msgs::TransformStamped softData;
+    tf::Transform softToMarker;
     bool alignedFlag;
     bool use_soft;
 

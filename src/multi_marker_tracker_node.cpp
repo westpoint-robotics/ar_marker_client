@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
   ROS_INFO("Initializing.");
 
-  mtracker->setMarkerOffset(markerOffset);
+  //mtracker->setMarkerOffset(markerOffset);
   mtracker->setMarkerIds(marker_ids);
   mtracker->setPubTargetPose(pub_target_pose);
   mtracker->setPubTargetPose_f(pub_target_pose_f);
@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 
       tf::Transform uavSoftPose;
       tf::Transform uavMarkerPose;
+      tf::Transform softToMarker;
       std::vector<tf::Transform> softToMarkerTransforms;
 
       if (mtracker->use_soft) {
@@ -115,9 +116,11 @@ int main(int argc, char **argv)
 
           if (fabs(timeDiff.toSec()) < 0.16 && meas_number<filter_length) {
               meas_number++;
-              std::cout<<meas_number<<std::endl;
+              //std::cout<<meas_number<<std::endl;
 
-              uavSoftPose = mtracker->softData.transform;
+              tf::transformMsgToTF(mtracker->softData.transform, uavSoftPose);
+              uavSoftPose.setRotation(tf::Quaternion(0,0,0,1));
+
               uavMarkerPose.setOrigin(tf::Vector3(mtracker->uav_relative_pose[marker_ids[0]].pose.position.x,
                                                   mtracker->uav_relative_pose[marker_ids[0]].pose.position.y,
                                                   mtracker->uav_relative_pose[marker_ids[0]].pose.position.z));
@@ -126,7 +129,22 @@ int main(int argc, char **argv)
                                                        mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.z,
                                                        mtracker->uav_relative_pose[marker_ids[0]].pose.orientation.w));
 
+              softToMarkerTransforms.push_back(uavSoftPose * uavMarkerPose.inverse());
 
+              tf::Matrix3x3 m(uavSoftPose.getRotation());
+              double roll, pitch, yaw;
+              m.getRPY(roll, pitch, yaw);
+              ROS_INFO("Soft2UAV pos, rot %.2f %.2f %.2f %.2f, %.2f, %.2f", uavSoftPose.getOrigin().getX(), uavSoftPose.getOrigin().getY(),uavSoftPose.getOrigin().getZ(),
+                       roll, pitch, yaw);
+
+              m = tf::Matrix3x3(uavMarkerPose.getRotation());
+              m.getRPY(roll, pitch, yaw);
+              ROS_INFO("Marker2UAV pos, rot %.2f %.2f %.2f %.2f, %.2f, %.2f", uavMarkerPose.getOrigin().getX(), uavMarkerPose.getOrigin().getY(),uavMarkerPose.getOrigin().getZ(),
+                       roll, pitch, yaw);
+              ROS_INFO("-----------------------------------------------");
+
+
+              /*
               diff_x = mtracker->softData.transform.translation.x - mtracker->uav_relative_pose[marker_ids[0]].pose.position.x;
               diff_y = mtracker->softData.transform.translation.y - mtracker->uav_relative_pose[marker_ids[0]].pose.position.y;
               diff_z = mtracker->softData.transform.translation.z - mtracker->uav_relative_pose[marker_ids[0]].pose.position.z;
@@ -134,14 +152,42 @@ int main(int argc, char **argv)
               mean_x += diff_x/filter_length;
               mean_y += diff_y/filter_length;
               mean_z += diff_z/filter_length;
-
+              */
               if (meas_number >= filter_length){
+                /*
+
                 markerOffset[0] = mean_x;
                 markerOffset[1] = mean_y;
                 markerOffset[2] = mean_z;
-                mtracker->setMarkerOffset(markerOffset);
-                mtracker->setAlignedFlag(true);
-                std::cout<<"x: "<<markerOffset[0]<<"y: "<<markerOffset[1]<<"z: "<<markerOffset[2]<<std::endl;
+                */
+
+                  tf::Vector3 position(0,0,0);
+                  tf::Quaternion rotation(0,0,0,1);
+
+                  // average position and orientation
+
+                  int transform_samples_num = softToMarkerTransforms.size();
+
+                  position  = softToMarkerTransforms[0].getOrigin() / transform_samples_num;
+                  rotation  = softToMarkerTransforms[0].getRotation();
+
+                  for(int j = 1; j < transform_samples_num ; j++) {
+
+                      position = position + softToMarkerTransforms[j].getOrigin() / transform_samples_num;
+                      rotation = rotation.slerp(softToMarkerTransforms[j].getRotation(), 1 / (j + 1));
+                  }
+
+                  softToMarker.setOrigin(position);
+                  softToMarker.setRotation(rotation);
+
+                  mtracker->setMarkerOffset(softToMarker);
+                  mtracker->setAlignedFlag(true);
+
+                  tf::Matrix3x3 m(softToMarker.getRotation());
+                  double roll, pitch, yaw;
+                  m.getRPY(roll, pitch, yaw);
+                  ROS_INFO("Soft to marker transform, position %.2f %.2f %.2f", softToMarker.getOrigin().getX(), softToMarker.getOrigin().getY(),softToMarker.getOrigin().getZ());
+                  ROS_INFO("Soft to marker transform, roll, pitch, yaw %.2f, %.2f, %.2f", roll, pitch, yaw );
               }
           }
           mtracker->newSoftData = false;

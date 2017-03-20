@@ -192,10 +192,8 @@ void MultiMarkerTracker::setPubDetectionFlag(ros::Publisher fPub)
 }
 
 
-void MultiMarkerTracker::setMarkerOffset(double *offset) {
-    markerOffset[0] = offset[0];
-    markerOffset[1] = offset[1];
-    markerOffset[2] = offset[2];
+void MultiMarkerTracker::setMarkerOffset(tf::Transform softToMarker) {
+    this->softToMarker = softToMarker;
 }
 
 void MultiMarkerTracker::setMarkerIds(std::vector<int> marker_ids) {
@@ -424,19 +422,43 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   uav_pose.pose.position.y = marker2inertial(1,3);
   uav_pose.pose.position.z = marker2inertial(2,3);
 
-  if (isAlignedMarkerWithSoft()) {
-    uav_pose.pose.position.x += markerOffset[0];
-    uav_pose.pose.position.y += markerOffset[1];
-    uav_pose.pose.position.z += markerOffset[2];
-  }
-
-
   Eigen::Matrix3d rotation_matrix = marker2inertial.block<3,3>(0,0);
   Eigen::Quaterniond quaternion(rotation_matrix);
   uav_pose.pose.orientation.x = quaternion.x();
   uav_pose.pose.orientation.y = quaternion.y();
   uav_pose.pose.orientation.z = quaternion.z();
   uav_pose.pose.orientation.w = quaternion.w();
+
+  if (isAlignedMarkerWithSoft()) {
+
+      tf::Transform uavMarkerPose;
+
+      uavMarkerPose.setOrigin(tf::Vector3(uav_pose.pose.position.x,
+                                          uav_pose.pose.position.y,
+                                          uav_pose.pose.position.z));
+      uavMarkerPose.setRotation(tf::Quaternion(uav_pose.pose.orientation.x,
+                                               uav_pose.pose.orientation.y,
+                                               uav_pose.pose.orientation.z,
+                                               uav_pose.pose.orientation.w));
+
+      uavMarkerPose = softToMarker * uavMarkerPose;
+
+      uav_pose.pose.position.x = uavMarkerPose.getOrigin().getX();
+      uav_pose.pose.position.y = uavMarkerPose.getOrigin().getY();
+      uav_pose.pose.position.z = uavMarkerPose.getOrigin().getZ();
+
+      uav_pose.pose.orientation.x = uavMarkerPose.getRotation().getX();
+      uav_pose.pose.orientation.y = uavMarkerPose.getRotation().getY();
+      uav_pose.pose.orientation.z = uavMarkerPose.getRotation().getZ();
+      uav_pose.pose.orientation.w = uavMarkerPose.getRotation().getW();
+
+
+    /*
+    uav_pose.pose.position.x += markerOffset[0];
+    uav_pose.pose.position.y += markerOffset[1];
+    uav_pose.pose.position.z += markerOffset[2];
+    */
+  }
 
   uav_pose.header.stamp = marker.header.stamp;
   uav_pose.header.frame_id = "world";
