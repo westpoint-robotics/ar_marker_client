@@ -147,7 +147,6 @@ void MarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
   positionGlobalFrame[2] = 0;
 
   quaternion2euler(qGlobalFrame, eulerGlobalFrame);
-  std::cout<<"Imu Roll: "<<eulerGlobalFrame[0]<<" Pitch: "<<eulerGlobalFrame[1]<<" Yaw: "<<eulerGlobalFrame[2]<<std::endl;
 
   eulerGlobalFrame[2] = 0;
 
