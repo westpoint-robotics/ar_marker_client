@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   double markerOffset[3] = {0.0};
   double mean_x = 0, mean_y = 0, mean_z = 0;
   double diff_x = 0, diff_y = 0, diff_z = 0;
-  int v_length;
+  int filter_length;
   int meas_number = 0;
   std::string odometry_callback, cam2imuTf;
 
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   private_node_handle_.param("marker_offset_x", markerOffset[0], double(0));
   private_node_handle_.param("marker_offset_y", markerOffset[1], double(0));
   private_node_handle_.param("marker_offset_z", markerOffset[2], double(0));
-  private_node_handle_.param("soft_data_vector_length", v_length, int(100));
+  private_node_handle_.param("soft_data_vector_length", filter_length, int(100));
   private_node_handle_.param("odometry_callback", odometry_callback, std::string("/euroc3/msf_core/odometry"));
   private_node_handle_.param("cam2imuTf", cam2imuTf, std::string("/parameters/cam2imu.yaml"));
 
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
     ros::Duration timeDiff = mtracker->markerPointStamped.header.stamp - mtracker->softData.header.stamp;
 
-    if (fabs(timeDiff.toSec()) < 0.16 && meas_number<v_length)
+    if (fabs(timeDiff.toSec()) < 0.16 && meas_number<filter_length)
     {
       meas_number++;
       std::cout<<meas_number<<std::endl;
@@ -80,11 +80,11 @@ int main(int argc, char **argv)
       diff_y = mtracker->softData.transform.translation.y - mtracker->markerPointStamped.point.y;
       diff_z = mtracker->softData.transform.translation.z - mtracker->markerPointStamped.point.z;
 
-      mean_x += diff_x/v_length;
-      mean_y += diff_y/v_length;
-      mean_z += diff_z/v_length;
+      mean_x += diff_x/filter_length;
+      mean_y += diff_y/filter_length;
+      mean_z += diff_z/filter_length;
 
-      if (meas_number >= v_length){
+      if (meas_number >= filter_length){
         markerOffset[0] = mean_x;
         markerOffset[1] = mean_y;
         markerOffset[2] = mean_z;

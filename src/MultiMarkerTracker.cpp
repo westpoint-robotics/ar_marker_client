@@ -28,6 +28,11 @@ MultiMarkerTracker::MultiMarkerTracker() {
     min_detection_count = 15;
     rate_filt_max_velocity = 1;  // m/s
     rate_filt_max_delta_time = 0.1;
+    alignedFlag = false;
+    newSoftData = false;
+    newBaseMarkerData = false;
+    use_soft = false;
+
 }
 
 MultiMarkerTracker::~MultiMarkerTracker() {
@@ -142,6 +147,31 @@ void MultiMarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
 }
 
+void MultiMarkerTracker::softCallback(const geometry_msgs::TransformStamped &msg)
+{
+  //double soft_q[4], soft_euler[3];
+
+  //soft_q = msg.
+
+  //quaternion2euler(soft_q, soft_euler);
+
+  softData = msg;
+  newSoftData = true;
+  //soft_yaw = soft_euler[2];
+}
+
+bool MultiMarkerTracker::isAlignedMarkerWithSoft()
+{
+  return alignedFlag;
+}
+
+void MultiMarkerTracker::setAlignedFlag(bool flag)
+{
+  alignedFlag = flag;
+}
+
+
+
 void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
 
   int i;
@@ -203,6 +233,9 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         uav_relative_pose_publishers[marker.id].publish(uav_pose);
         uav_relative_pose[marker.id] = uav_pose;
 
+        if (isMainMarker(marker.id)) {
+            newBaseMarkerData = true;
+        }
 
         // publish corrected transform from cam to the detected marker
         tf::Transform marker_to_uav, uav_to_marker;
@@ -249,7 +282,13 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                       tf_transform.setRotation( unit_quaternion);
                       tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
 
+                      tf::StampedTransform tf_stamped;
+                      tf_stamped.setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
+                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
                       marker_frame_added[marker_ids[i]] = true;
+                      ROS_INFO("Adding marker frame %d", marker_ids[i]);
                   }
                   else if (marker_detected[marker_ids[i]] &&  (marker_detected_counter[marker_ids[i]] > min_detection_count)) {
                     // add tf betweer marker and main marker frame
@@ -270,10 +309,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                          ROS_ERROR("%s",ex.what());
                          continue;
                       }
-                                           tf_transform.setOrigin( transform_stamped.getOrigin());
+
+                      tf_transform.setOrigin( transform_stamped.getOrigin());
                       tf_transform.setRotation( transform_stamped.getRotation());
                       tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), marker_frames[marker_base_frame_id].c_str(), marker_frames[marker_ids[i]].c_str()));
 
+                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                      marker_transform_stamped[marker_ids[i]].frame_id_ = marker_frames[marker_base_frame_id].c_str();
+                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
                       marker_frame_added[marker_ids[i]] = true;
                       ROS_INFO("Adding marker frame %d", marker_ids[i]);
                   }
@@ -345,7 +388,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
 
                 double dt = (uav_pose[marker_ids[i]].header.stamp.toSec() - uav_position_filtered_old.header.stamp.toSec());
                 // do the filtering only if get continuous markers
-                if (dt < rate_filt_max_delta_time) {
+                //if (dt < rate_filt_max_delta_time) {
                   double max_dl = dt * rate_filt_max_velocity;
                   if ((fabs( uav_pose[marker_ids[i]].pose.position.x - uav_position_filtered_old.point.x) < max_dl) &&
                       (fabs( uav_pose[marker_ids[i]].pose.position.y - uav_position_filtered_old.point.y) < max_dl) &&
@@ -362,7 +405,8 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                       ROS_INFO("Ignoring measurement from marker %d", marker_ids[i]);
                   }
 
-                }
+                //}
+                  /*
                 else {
                  // we receive the marker pose after a while, just use it in measurement
                     uav_position_filtered.point.x += uav_pose[marker_ids[i]].pose.position.x;
@@ -371,6 +415,7 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
                     uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
                     filtered_markers_detected++;
                 }
+                */
 
             }
 
@@ -393,7 +438,15 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     uav_position.point.y = uav_position.point.y / markers_detected;
     uav_position.point.z = uav_position.point.z / markers_detected;
 
-    pub_target_pose.publish(uav_position);
+    if (use_soft) {
+      if (isAlignedMarkerWithSoft()) {
+        pub_target_pose.publish(uav_position);
+      }
+    }
+    else {
+        pub_target_pose.publish(uav_position);
+    }
+
 
   }
 
@@ -404,8 +457,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     uav_position_filtered.point.y = uav_position_filtered.point.y / filtered_markers_detected;
     uav_position_filtered.point.z = uav_position_filtered.point.z / filtered_markers_detected;
 
-    pub_target_pose_f.publish(uav_position_filtered);
-
+    if (use_soft) {
+      if (isAlignedMarkerWithSoft()) {
+         pub_target_pose_f.publish(uav_position_filtered);
+      }
+    }
+    else {
+        pub_target_pose_f.publish(uav_position_filtered);
+    }
     uav_position_filtered_old = uav_position_filtered;
 
   }
@@ -417,6 +476,14 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
       pubDetectionFlag.publish(detection_flag_msg);
   }
   */
+
+  // publish tranform between markers
+  for (int i = 0; i < marker_ids.size(); i++) {
+      if (marker_frame_added[marker_ids[i]]) {
+        marker_transform_stamped[marker_ids[i]].stamp_ = ros::Time::now();
+        tf_broadcaster.sendTransform(marker_transform_stamped[marker_ids[i]]);
+      }
+  }
 }
 
 void MultiMarkerTracker::setPubTargetPose(ros::Publisher pubTargetPose) {
@@ -513,6 +580,10 @@ void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
   ROS_INFO("Initialized pose publishers");
 }
 
+void MultiMarkerTracker::setUseSoftFlag(bool flag) {
+  use_soft = flag;
+}
+
 geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker) {
 
   // input ar marker - position of the marker w.r.t the UAV camera
@@ -548,11 +619,13 @@ geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_
 
   uav_pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
   uav_pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
-  uav_pose.pose.position.z = markerGlobalFrame(2,3);
+  uav_pose.pose.position.z = -markerGlobalFrame(2,3);
 
-  uav_pose.pose.position.x = uav_pose.pose.position.x;// + markerOffset[0];
-  uav_pose.pose.position.y = uav_pose.pose.position.y;// + markerOffset[1];
-  uav_pose.pose.position.z = -uav_pose.pose.position.z;// + markerOffset[2];
+  if (use_soft) {
+    uav_pose.pose.position.x += markerOffset[0];
+    uav_pose.pose.position.y += markerOffset[1];
+    uav_pose.pose.position.z += markerOffset[2];
+  }
 
 
   Eigen::Matrix3d rotation_matrix = markerGlobalFrame.block<3,3>(0,0);

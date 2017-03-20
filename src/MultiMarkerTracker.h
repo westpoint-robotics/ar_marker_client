@@ -24,6 +24,7 @@
 #include <sensor_msgs/Imu.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 #include <boost/lexical_cast.hpp>
 #include <stdio.h>
 
@@ -36,6 +37,7 @@ public:
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
     void imuCallback(const sensor_msgs::Imu &msg);
+    void softCallback(const geometry_msgs::TransformStamped &msg);
     void quaternion2euler(double *quaternion, double *euler);
     void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *orientationEuler, double *position);
@@ -49,6 +51,11 @@ public:
     int canAddNewFrames();
     geometry_msgs::PoseStamped correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker);
     void initUavPosePublishers(ros::NodeHandle &nh);
+    bool isAlignedMarkerWithSoft();
+    void setAlignedFlag(bool flag);
+    void setUseSoftFlag(bool flag);
+    bool newSoftData;
+    bool newBaseMarkerData;
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
 
@@ -87,6 +94,9 @@ public:
     std::map<int, bool> marker_detected;
     std::map<int, int> marker_detected_counter;
     std::map<int, bool> marker_frame_added;
+    std::map<int, tf::StampedTransform> marker_transform_stamped;
+    std::map<int, std::vector<tf::Transform> marker_transforms;
+    std::map<int, int> base_markers;
     int min_detection_count;
     std::string main_marker_frame;
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
@@ -100,7 +110,9 @@ public:
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;
     tf::TransformListener tf_listener;
-
+    geometry_msgs::TransformStamped softData;
+    bool alignedFlag;
+    bool use_soft;
 
 };
 
