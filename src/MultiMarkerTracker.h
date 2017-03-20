@@ -48,7 +48,7 @@ public:
     bool isValidMarkerId(int marker_id);
     bool isMainMarker(int marker_id);
     bool allMarkerFramesAdded();
-    int canAddNewFrames();
+    int getBaseMarker();
     void extractMarkers(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     geometry_msgs::PoseStamped getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker);
     void addNewFrames();
@@ -58,6 +58,7 @@ public:
     bool isAlignedMarkerWithSoft();
     void setAlignedFlag(bool flag);
     void setUseSoftFlag(bool flag);
+    void setMarkerTransformSampleNum(int samples_num);
     bool newSoftData;
     bool newBaseMarkerData;
 
@@ -100,8 +101,9 @@ public:
     std::map<int, bool> marker_frame_added;
     std::map<int, tf::StampedTransform> marker_transform_stamped;
     std::map<int, std::vector<tf::Transform> > marker_transforms;
-    std::map<int, int> base_markers;
+    std::map<int, int> marker_base_frames;
     int min_detection_count;
+    int marker_transform_samples_num;
     std::string main_marker_frame;
     Eigen::Matrix4d cam2UAV, UAV2GlobalFrame, markerTRMatrix, markerGlobalFrame;
     ros::Publisher pub_target_pose, pubDetectionFlag;

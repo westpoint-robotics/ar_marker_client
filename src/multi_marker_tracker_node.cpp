@@ -15,6 +15,7 @@ int main(int argc, char **argv)
   MultiMarkerTracker *mtracker = new MultiMarkerTracker();
   // Declare variables that can be modified by launch file or command line.
   int min_marker_detection;
+  int transform_sample_num;
   double markerOffset[3] = {0.0};
   double rate_filt_velocity;
   double rate_filt_time;
@@ -43,6 +44,7 @@ int main(int argc, char **argv)
   private_node_handle_.getParam("rate_filt_time", rate_filt_time);
   private_node_handle_.getParam("camera_frame", camera_frame);
   private_node_handle_.getParam("min_marker_detection", min_marker_detection);
+  private_node_handle_.getParam("marker_transform_sample_num", transform_sample_num);
   private_node_handle_.param("soft_data_vector_length", filter_length, int(100));
   private_node_handle_.param("use_soft", use_soft, false);
 
@@ -84,6 +86,7 @@ int main(int argc, char **argv)
   mtracker->setRateFiltVelocity(rate_filt_velocity);
   mtracker->setMinMarkerDetection(min_marker_detection);
   mtracker->setUseSoftFlag(use_soft);
+  mtracker->setMarkerTransformSampleNum(transform_sample_num);
   ROS_INFO("Initializing publisher.");
   mtracker->initUavPosePublishers(n);
 
@@ -98,6 +101,8 @@ int main(int argc, char **argv)
   while (n.ok())
   {
       ros::spinOnce();
+
+      //ROS_INFO("Main loop.");
 
       if (mtracker->use_soft) {
         if (mtracker->newSoftData && mtracker->newBaseMarkerData) {
