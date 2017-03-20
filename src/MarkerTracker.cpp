@@ -10,12 +10,17 @@
 MarkerTracker::MarkerTracker() {
     // TODO Auto-generated constructor stub
 
-    cam2UAV << 	0.0, -1.0, 0.0, 0.005, //-0.003 - ako se optitrack marker ne pomice
+    uav2cam << 	0.0, 1.0, 0.0, 0.005, //-0.003 - ako se optitrack marker ne pomice
                 -1.0, 0.0, 0.0, -0.007, //0.0231 - ako se optitrack marker ne pomice
-                0.0, 0.0, -1.0, -0.05148, //-0.1148 - ako se optitrack marker ne pomice
+                0.0, 0.0, 1.0, -0.05148, //-0.1148 - ako se optitrack marker ne pomice
                 0.0, 0.0, 0.0, 1.0;
+
+    cam2marker << 1.0, 0.0, 0.0, 0.0,
+             0.0, -1.0, 0.0, 0.0,
+             0.0, 0.0, -1.0, 0.0,
+             0.0, 0.0, 0.0, 1.0;
                 
-	  UAV2GlobalFrame << 1.0, 0.0, 0.0, 0.0,
+	  inertial2uav << 1.0, 0.0, 0.0, 0.0,
 					   0.0, 1.0, 0.0, 0.0,
 					   0.0, 0.0, 1.0, 0.0,
 					   0.0, 0.0, 0.0, 1.0;
@@ -24,6 +29,10 @@ MarkerTracker::MarkerTracker() {
              0.0, 1.0, 0.0, 0.0,
              0.0, 0.0, -1.0, 0.0,
              0.0, 0.0, 0.0, 1.0;
+    UAVinMarkerFrame << 1.0, 0.0, 0.0, 0.0,
+                          0.0, 1.0, 0.0, 0.0,
+                          0.0, 0.0, 1.0, 0.0,
+                          0.0, 0.0, 0.0, 1.0;
 
     filt_const = 0.9;
     markerPositionOld[0] = 0;
@@ -42,13 +51,13 @@ MarkerTracker::~MarkerTracker() {
 void MarkerTracker::LoadParameters(std::string file)
 {
   // First open .yaml file
-  YAML::Node config = YAML::LoadFile(file);
+  /*YAML::Node config = YAML::LoadFile(file);
   std::vector<double> cam2imu_vector;
   cam2imu_vector = config["cam2imu"].as<std::vector<double> >();
   cam2UAV << cam2imu_vector[0], cam2imu_vector[1], cam2imu_vector[2], cam2imu_vector[3], //-0.003 - ako se optitrack marker ne pomice
              cam2imu_vector[4], cam2imu_vector[5], cam2imu_vector[6], cam2imu_vector[7], //0.0231 - ako se optitrack marker ne pomice
              cam2imu_vector[8], cam2imu_vector[9], cam2imu_vector[10], cam2imu_vector[11], //-0.1148 - ako se optitrack marker ne pomice
-             cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];
+             cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];*/
 }
 
 void MarkerTracker::quaternion2euler(double *quaternion, double *euler)
@@ -138,10 +147,11 @@ void MarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
   positionGlobalFrame[2] = 0;
 
   quaternion2euler(qGlobalFrame, eulerGlobalFrame);
+  std::cout<<"Imu Roll: "<<eulerGlobalFrame[0]<<" Pitch: "<<eulerGlobalFrame[1]<<" Yaw: "<<eulerGlobalFrame[2]<<std::endl;
 
-  eulerGlobalFrame[2]=0;
+  eulerGlobalFrame[2] = 0;
 
-  getRotationTranslationMatrix(UAV2GlobalFrame, eulerGlobalFrame, positionGlobalFrame);
+  getRotationTranslationMatrix(inertial2uav, eulerGlobalFrame, positionGlobalFrame);
 }
 
 void MarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
@@ -197,28 +207,32 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerOrientation[1] = euler_marker[1];
             markerOrientation[2] = euler_marker[2];
 
+
             markerPosition[0] = marker.pose.pose.position.x;
             markerPosition[1] = marker.pose.pose.position.y;
             markerPosition[2] = marker.pose.pose.position.z;
-
             
             getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
-            markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
-
-            getAnglesFromRotationTranslationMatrix(markerGlobalFrame, markerOrientation);
 
 
-            //marker.pose.pose.position.x = markerGlobalFrame(0,3);
-            //marker.pose.pose.position.y = markerGlobalFrame(1,3);
-            //marker.pose.pose.position.z = markerGlobalFrame(2,3);
-            std::cout<<-markerOrientation[2]<<std::endl;
+            inertial2marker = inertial2uav * uav2cam * cam2marker * markerTRMatrix;
+            marker2inertial = inertial2marker.inverse();
 
-            marker.pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
-            marker.pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
-            marker.pose.pose.position.z = markerGlobalFrame(2,3);
+            getAnglesFromRotationTranslationMatrix(inertial2marker, markerOrientation);
+
+            /*std::cout<<"2. Roll: "<<markerOrientation[0]<<" Pitch: "<<markerOrientation[1]<<" Yaw: "<<markerOrientation[2]<<std::endl;
+            std::cout<<"2. X: "<<marker2inertial(0,3)<<" Y: "<<marker2inertial(1,3)<<" Z: "<<marker2inertial(2,3)<<std::endl;
+            std::cout<<""<<std::endl;*/
+
+
+            marker.pose.pose.position.x = marker2inertial(0,3);
+            marker.pose.pose.position.y = marker2inertial(1,3);
+            marker.pose.pose.position.z = marker2inertial(2,3);
+
+
 
             marker.pose.pose.orientation.x = markerOrientation[0];
-            marker.pose.pose.orientation.y = markerOrientation[1];
+            marker.pose.pose.orientation.y = eulerGlobalFrame[0];
             marker.pose.pose.orientation.z = markerOrientation[2];
             marker.pose.pose.orientation.w = 0;
 
@@ -230,7 +244,7 @@ void MarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::
             markerPointStamped.header.frame_id = "world";
             markerPointStamped.point.x = marker.pose.pose.position.x + markerOffset[0];
             markerPointStamped.point.y = marker.pose.pose.position.y + markerOffset[1];
-            markerPointStamped.point.z = -marker.pose.pose.position.z + markerOffset[2];
+            markerPointStamped.point.z = marker.pose.pose.position.z + markerOffset[2];
 
   			      //pub_target_pose.publish(marker.pose);
             pubDetectionFlag.publish(1);
