@@ -49,7 +49,11 @@ public:
     bool isMainMarker(int marker_id);
     bool allMarkerFramesAdded();
     int canAddNewFrames();
-    geometry_msgs::PoseStamped correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker);
+    void extractMarkers(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
+    geometry_msgs::PoseStamped getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker);
+    void addNewFrames();
+    void estimateUavPoseFromMarkers();
+    void publishStaticTransformsBetweenMarkers();
     void initUavPosePublishers(ros::NodeHandle &nh);
     bool isAlignedMarkerWithSoft();
     void setAlignedFlag(bool flag);
@@ -95,7 +99,7 @@ public:
     std::map<int, int> marker_detected_counter;
     std::map<int, bool> marker_frame_added;
     std::map<int, tf::StampedTransform> marker_transform_stamped;
-    std::map<int, std::vector<tf::Transform> marker_transforms;
+    std::map<int, std::vector<tf::Transform> > marker_transforms;
     std::map<int, int> base_markers;
     int min_detection_count;
     std::string main_marker_frame;

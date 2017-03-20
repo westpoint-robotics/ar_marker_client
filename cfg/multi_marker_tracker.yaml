@@ -1,8 +1,8 @@
 marker_ids: [10,12,11,13]
 min_marker_detection: 15
-rate_filt_velocity: 10
+rate_filt_velocity: 2.5
 rate_filt_time: 0.1
 cam2imuTf: "/parameters/cam2imu.yaml"
 camera_frame: "cam3"
-soft_data_vector_length: 100
+soft_data_vector_length: 50
 use_soft: true

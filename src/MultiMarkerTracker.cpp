@@ -170,22 +170,128 @@ void MultiMarkerTracker::setAlignedFlag(bool flag)
   alignedFlag = flag;
 }
 
+void MultiMarkerTracker::setPubTargetPose(ros::Publisher pubTargetPose) {
+        pub_target_pose = pubTargetPose;
+}
 
+void MultiMarkerTracker::setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
+    pub_target_pose_f = pubTargetPose_f;
+}
+
+void MultiMarkerTracker::setPubDetectionFlag(ros::Publisher fPub)
+{
+    pubDetectionFlag = fPub;
+}
+
+
+void MultiMarkerTracker::setMarkerOffset(double *offset) {
+    markerOffset[0] = offset[0];
+    markerOffset[1] = offset[1];
+    markerOffset[2] = offset[2];
+}
+
+void MultiMarkerTracker::setMarkerIds(std::vector<int> marker_ids) {
+  this->marker_ids = marker_ids;
+  for(std::vector<int>::size_type i = 0; i != this->marker_ids.size(); i++) {
+      this->marker_detected_counter[this->marker_ids[i]] = 0;
+      this->marker_frame_added[this->marker_ids[i]] = false;
+      marker_frames[this->marker_ids[i]] = std::string("marker")
+                                           + boost::lexical_cast<std::string>(marker_ids[i]);
+      marker_frames_corrected[this->marker_ids[i]] = std::string("ar_marker_")
+                                                     + boost::lexical_cast<std::string>(marker_ids[i])
+                                                     + std::string("_corrected");
+  }
+}
+
+void MultiMarkerTracker::setCameraFrame(std::string camera_frame) {
+  this->camera_frame = camera_frame;
+}
+
+void MultiMarkerTracker::setPubMarker0(ros::Publisher pub) {
+    pub_marker0 = pub;
+ }
+
+void MultiMarkerTracker::setRateFiltVelocity(double velocity) {
+    rate_filt_max_velocity = velocity;
+}
+
+void MultiMarkerTracker::setRateFiltTime(double time) {
+    rate_filt_max_delta_time = time;
+}
+
+void MultiMarkerTracker::setMinMarkerDetection(int detection_number) {
+    min_detection_count = detection_number;
+}
+
+bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
+  //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) != marker_ids.end());
+  for(int i=0; i < marker_ids.size(); i++) {
+      if (marker_ids[i] == marker_id)
+        return true;
+  }
+  return false;
+}
+
+bool MultiMarkerTracker::isMainMarker(int marker_id) {
+  //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) == marker_ids.begin());
+  return (marker_ids[0] == marker_id);
+}
+
+int MultiMarkerTracker::canAddNewFrames() {
+    for (int i = 0; i < marker_ids.size(); i++) {
+        if (marker_detected[marker_ids[i]]) {
+          if (isMainMarker(marker_ids[i]) || marker_frame_added[marker_ids[i]])
+            return marker_ids[i];
+        }
+    }
+    return -1;
+}
+
+bool MultiMarkerTracker::allMarkerFramesAdded() {
+  bool res = true;
+  for (int i = 0; i < marker_ids.size(); i++) {
+      res &= marker_frame_added[marker_ids[i]];
+  }
+  return res;
+}
+
+void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
+  for(int i = 0; i < marker_ids.size(); i++) {
+     uav_pose_publishers[marker_ids[i]] =  nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose") + boost::lexical_cast<std::string>(i)).c_str(), 1);
+     uav_relative_pose_publishers[marker_ids[i]] = nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose_relative") + boost::lexical_cast<std::string>(i)).c_str(), 1);
+     marker_corrected_pose_publishers[marker_ids[i]] = nh.advertise<geometry_msgs::PoseStamped>((std::string("marker_corrected") + boost::lexical_cast<std::string>(i)).c_str(), 1);
+  }
+  ROS_INFO("Initialized pose publishers");
+}
+
+void MultiMarkerTracker::setUseSoftFlag(bool flag) {
+  use_soft = flag;
+}
 
 void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
 
-  int i;
-  ar_track_alvar_msgs::AlvarMarker marker;
-  geometry_msgs::PointStamped markerPointStamped;
-  std_msgs::Int16 detection_flag_msg;
-  // publish tfs
-  tf::Transform tf_transform;
+  publishStaticTransformsBetweenMarkers();
 
   for (int i = 0; i < marker_ids.size(); i++) {
       marker_detected[marker_ids[i]] = false;
   }
 
-  for(i = 0; i < msg->markers.size(); i++) {
+  extractMarkers(msg);
+
+  if (!allMarkerFramesAdded()) {
+
+      addNewFrames();
+  }
+
+  estimateUavPoseFromMarkers();
+
+}
+
+void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
+
+  ar_track_alvar_msgs::AlvarMarker marker;
+
+  for(int i = 0; i < msg->markers.size(); i++) {
           marker = msg->markers[i];
 
      if (isValidMarkerId(marker.id)) {
@@ -222,8 +328,9 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
             pub_marker0.publish(pose_msg);
 
         }
+
         geometry_msgs::PoseStamped uav_pose;
-        uav_pose =  correctMarkerPose(marker);
+        uav_pose =  getUavPoseFromMarker(marker);
         marker_detected[marker.id] = true;
         marker_detected_counter[marker.id]++;
         //ROS_INFO("Corrected position marker id %d, %.2f, %.2f, %.2f", marker.id, marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z);
@@ -263,73 +370,134 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     }
   }
 
+}
 
-  if (!allMarkerFramesAdded()) {
+geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker) {
 
-      int marker_base_frame_id = canAddNewFrames();
+  // input ar marker - position of the marker w.r.t the UAV camera
+  // output pose stamped - position of the UAV w.r.t. the marker frame
 
-      if (marker_base_frame_id >= 0) {
-          std::string str("[id, count, detected] = ");
-          for (std::vector<int>::size_type i=0; i < marker_ids.size(); i++) {
+  double q_marker[4], euler_marker[3];
+  geometry_msgs::PoseStamped uav_pose;
 
-              if (!marker_frame_added[marker_ids[i]]) {
-                  if (isMainMarker(marker_ids[i])) {
+  markerPosition[0] = marker.pose.pose.position.x;
+  markerPosition[1] = marker.pose.pose.position.y;
+  markerPosition[2] = marker.pose.pose.position.z;
 
-                      // publish zero transform to cam3
-                      tf::Vector3 zero_origin(0,0,0);
-                      tf::Quaternion unit_quaternion(0,0,0,1);
-                      tf_transform.setOrigin( zero_origin);
-                      tf_transform.setRotation( unit_quaternion);
-                      tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
+  q_marker[1] = marker.pose.pose.orientation.x;
+  q_marker[2] = marker.pose.pose.orientation.y;
+  q_marker[3] = marker.pose.pose.orientation.z;
+  q_marker[0] = marker.pose.pose.orientation.w;
 
-                      tf::StampedTransform tf_stamped;
-                      tf_stamped.setData(tf_transform);
-                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
-                      marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
-                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
-                      marker_frame_added[marker_ids[i]] = true;
-                      ROS_INFO("Adding marker frame %d", marker_ids[i]);
-                  }
-                  else if (marker_detected[marker_ids[i]] &&  (marker_detected_counter[marker_ids[i]] > min_detection_count)) {
-                    // add tf betweer marker and main marker frame
-                      tf::StampedTransform transform_stamped;
-                      try {
-                        tf_listener.lookupTransform(marker_frames_corrected[marker_base_frame_id].c_str(), marker_frames_corrected[marker_ids[i]].c_str(),
-                        ros::Time(0), transform_stamped);
-                        tf::Matrix3x3 m(transform_stamped.getRotation());
-                        double roll, pitch, yaw;
-                        m.getRPY(roll, pitch, yaw);
+  quaternion2euler(q_marker, euler_marker);
 
-                        ROS_INFO("Adding child frame %s with parent %s, translation %.2f %.2f %.2f, rpy %.2f %.2f %.2f",
-                                 marker_frames_corrected[marker_ids[i]].c_str(), marker_frames_corrected[marker_base_frame_id].c_str(),
-                                 transform_stamped.getOrigin().getX(), transform_stamped.getOrigin().getY(),  transform_stamped.getOrigin().getZ(),
-                                 roll, pitch, yaw);
-                      }
-                      catch (tf::TransformException &ex) {
-                         ROS_ERROR("%s",ex.what());
-                         continue;
-                      }
+  markerOrientation[0] = euler_marker[0];
+  markerOrientation[1] = euler_marker[1];
+  markerOrientation[2] = euler_marker[2];
 
-                      tf_transform.setOrigin( transform_stamped.getOrigin());
-                      tf_transform.setRotation( transform_stamped.getRotation());
-                      tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), marker_frames[marker_base_frame_id].c_str(), marker_frames[marker_ids[i]].c_str()));
+  getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
+  markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
 
-                      marker_transform_stamped[marker_ids[i]].setData(tf_transform);
-                      marker_transform_stamped[marker_ids[i]].frame_id_ = marker_frames[marker_base_frame_id].c_str();
-                      marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
-                      marker_frame_added[marker_ids[i]] = true;
-                      ROS_INFO("Adding marker frame %d", marker_ids[i]);
-                  }
+  getAnglesFromRotationTranslationMatrix(markerGlobalFrame, markerOrientation);
 
-              }
-              str += std::string("[") + boost::lexical_cast<std::string>(marker_ids[i]) + std::string(",")
-                  + boost::lexical_cast<std::string>(marker_detected_counter[marker_ids[i]]) + std::string(",")
-                  + boost::lexical_cast<std::string>(marker_frame_added[marker_ids[i]]) + std::string("]; ");
-        }
-        //ROS_INFO("%s", str.c_str());
-    }
+
+  //marker.pose.pose.position.x = markerGlobalFrame(0,3);
+  //marker.pose.pose.position.y = markerGlobalFrame(1,3);
+  //marker.pose.pose.position.z = markerGlobalFrame(2,3);
+
+  uav_pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
+  uav_pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
+  uav_pose.pose.position.z = -markerGlobalFrame(2,3);
+
+  if (use_soft) {
+    uav_pose.pose.position.x += markerOffset[0];
+    uav_pose.pose.position.y += markerOffset[1];
+    uav_pose.pose.position.z += markerOffset[2];
   }
 
+
+  Eigen::Matrix3d rotation_matrix = markerGlobalFrame.block<3,3>(0,0);
+  Eigen::Quaterniond quaternion(rotation_matrix);
+  uav_pose.pose.orientation.x = quaternion.x();
+  uav_pose.pose.orientation.y = quaternion.y();
+  uav_pose.pose.orientation.z = quaternion.z();
+  uav_pose.pose.orientation.w = quaternion.w();
+
+  uav_pose.header.stamp = marker.header.stamp;
+  uav_pose.header.frame_id = "world";
+
+  return uav_pose;
+
+}
+
+void MultiMarkerTracker::addNewFrames() {
+
+  tf::Transform tf_transform;
+  int marker_base_frame_id = canAddNewFrames();
+
+  if (marker_base_frame_id >= 0) {
+      std::string str("[id, count, detected] = ");
+      for (std::vector<int>::size_type i=0; i < marker_ids.size(); i++) {
+
+          if (!marker_frame_added[marker_ids[i]]) {
+              if (isMainMarker(marker_ids[i])) {
+
+                  // publish zero transform to cam3
+                  tf::Vector3 zero_origin(0,0,0);
+                  tf::Quaternion unit_quaternion(0,0,0,1);
+                  tf_transform.setOrigin( zero_origin);
+                  tf_transform.setRotation( unit_quaternion);
+                  tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
+
+                  tf::StampedTransform tf_stamped;
+                  tf_stamped.setData(tf_transform);
+                  marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                  marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
+                  marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
+                  marker_frame_added[marker_ids[i]] = true;
+                  ROS_INFO("Adding marker frame %d", marker_ids[i]);
+              }
+              else if (marker_detected[marker_ids[i]] &&  (marker_detected_counter[marker_ids[i]] > min_detection_count)) {
+                // add tf betweer marker and main marker frame
+                  tf::StampedTransform transform_stamped;
+                  try {
+                    tf_listener.lookupTransform(marker_frames_corrected[marker_base_frame_id].c_str(), marker_frames_corrected[marker_ids[i]].c_str(),
+                    ros::Time(0), transform_stamped);
+                    tf::Matrix3x3 m(transform_stamped.getRotation());
+                    double roll, pitch, yaw;
+                    m.getRPY(roll, pitch, yaw);
+
+                    ROS_INFO("Adding child frame %s with parent %s, translation %.2f %.2f %.2f, rpy %.2f %.2f %.2f",
+                             marker_frames_corrected[marker_ids[i]].c_str(), marker_frames_corrected[marker_base_frame_id].c_str(),
+                             transform_stamped.getOrigin().getX(), transform_stamped.getOrigin().getY(),  transform_stamped.getOrigin().getZ(),
+                             roll, pitch, yaw);
+                  }
+                  catch (tf::TransformException &ex) {
+                     ROS_ERROR("%s",ex.what());
+                     continue;
+                  }
+
+                  tf_transform.setOrigin( transform_stamped.getOrigin());
+                  tf_transform.setRotation( transform_stamped.getRotation());
+                  tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), marker_frames[marker_base_frame_id].c_str(), marker_frames[marker_ids[i]].c_str()));
+
+                  marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                  marker_transform_stamped[marker_ids[i]].frame_id_ = marker_frames[marker_base_frame_id].c_str();
+                  marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
+                  marker_frame_added[marker_ids[i]] = true;
+                  ROS_INFO("Adding marker frame %d", marker_ids[i]);
+              }
+
+          }
+          str += std::string("[") + boost::lexical_cast<std::string>(marker_ids[i]) + std::string(",")
+              + boost::lexical_cast<std::string>(marker_detected_counter[marker_ids[i]]) + std::string(",")
+              + boost::lexical_cast<std::string>(marker_frame_added[marker_ids[i]]) + std::string("]; ");
+    }
+    //ROS_INFO("%s", str.c_str());
+  }
+}
+
+void MultiMarkerTracker::estimateUavPoseFromMarkers() {
   tf::StampedTransform marker_to_marker_transform;
   tf::Transform uav_to_marker_transform, marker_to_base_marker_tf, uav_to_base_marker_tf;
 
@@ -468,15 +636,9 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
     uav_position_filtered_old = uav_position_filtered;
 
   }
+}
 
-  /*
-  if(packageDetectedFlag == false)
-  {
-      detection_flag_msg.data = 0;
-      pubDetectionFlag.publish(detection_flag_msg);
-  }
-  */
-
+void MultiMarkerTracker::publishStaticTransformsBetweenMarkers() {
   // publish tranform between markers
   for (int i = 0; i < marker_ids.size(); i++) {
       if (marker_frame_added[marker_ids[i]]) {
@@ -484,160 +646,4 @@ void MultiMarkerTracker::ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMark
         tf_broadcaster.sendTransform(marker_transform_stamped[marker_ids[i]]);
       }
   }
-}
-
-void MultiMarkerTracker::setPubTargetPose(ros::Publisher pubTargetPose) {
-        pub_target_pose = pubTargetPose;
-}
-
-void MultiMarkerTracker::setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
-    pub_target_pose_f = pubTargetPose_f;
-}
-
-void MultiMarkerTracker::setPubDetectionFlag(ros::Publisher fPub)
-{
-    pubDetectionFlag = fPub;
-}
-
-
-void MultiMarkerTracker::setMarkerOffset(double *offset) {
-    markerOffset[0] = offset[0];
-    markerOffset[1] = offset[1];
-    markerOffset[2] = offset[2];
-}
-
-void MultiMarkerTracker::setMarkerIds(std::vector<int> marker_ids) {
-  this->marker_ids = marker_ids;
-  for(std::vector<int>::size_type i = 0; i != this->marker_ids.size(); i++) {
-      this->marker_detected_counter[this->marker_ids[i]] = 0;
-      this->marker_frame_added[this->marker_ids[i]] = false;
-      marker_frames[this->marker_ids[i]] = std::string("marker")
-                                           + boost::lexical_cast<std::string>(marker_ids[i]);
-      marker_frames_corrected[this->marker_ids[i]] = std::string("ar_marker_")
-                                                     + boost::lexical_cast<std::string>(marker_ids[i])
-                                                     + std::string("_corrected");
-  }
-}
-
-void MultiMarkerTracker::setCameraFrame(std::string camera_frame) {
-  this->camera_frame = camera_frame;
-}
-
-void MultiMarkerTracker::setPubMarker0(ros::Publisher pub) {
-    pub_marker0 = pub;
- }
-
-void MultiMarkerTracker::setRateFiltVelocity(double velocity) {
-    rate_filt_max_velocity = velocity;
-}
-
-void MultiMarkerTracker::setRateFiltTime(double time) {
-    rate_filt_max_delta_time = time;
-}
-
-void MultiMarkerTracker::setMinMarkerDetection(int detection_number) {
-    min_detection_count = detection_number;
-}
-
-bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
-  //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) != marker_ids.end());
-  for(int i=0; i < marker_ids.size(); i++) {
-      if (marker_ids[i] == marker_id)
-        return true;
-  }
-  return false;
-}
-
-bool MultiMarkerTracker::isMainMarker(int marker_id) {
-  //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) == marker_ids.begin());
-  return (marker_ids[0] == marker_id);
-}
-
-int MultiMarkerTracker::canAddNewFrames() {
-    for (int i = 0; i < marker_ids.size(); i++) {
-        if (marker_detected[marker_ids[i]]) {
-          if (isMainMarker(marker_ids[i]) || marker_frame_added[marker_ids[i]])
-            return marker_ids[i];
-        }
-    }
-    return -1;
-}
-
-bool MultiMarkerTracker::allMarkerFramesAdded() {
-  bool res = true;
-  for (int i = 0; i < marker_ids.size(); i++) {
-      res &= marker_frame_added[marker_ids[i]];
-  }
-  return res;
-}
-
-void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
-  for(int i = 0; i < marker_ids.size(); i++) {
-     uav_pose_publishers[marker_ids[i]] =  nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose") + boost::lexical_cast<std::string>(i)).c_str(), 1);
-     uav_relative_pose_publishers[marker_ids[i]] = nh.advertise<geometry_msgs::PoseStamped>((std::string("uav_pose_relative") + boost::lexical_cast<std::string>(i)).c_str(), 1);
-     marker_corrected_pose_publishers[marker_ids[i]] = nh.advertise<geometry_msgs::PoseStamped>((std::string("marker_corrected") + boost::lexical_cast<std::string>(i)).c_str(), 1);
-  }
-  ROS_INFO("Initialized pose publishers");
-}
-
-void MultiMarkerTracker::setUseSoftFlag(bool flag) {
-  use_soft = flag;
-}
-
-geometry_msgs::PoseStamped MultiMarkerTracker::correctMarkerPose(ar_track_alvar_msgs::AlvarMarker marker) {
-
-  // input ar marker - position of the marker w.r.t the UAV camera
-  // output pose stamped - position of the UAV w.r.t. the marker frame
-
-  double q_marker[4], euler_marker[3];
-  geometry_msgs::PoseStamped uav_pose;
-
-  markerPosition[0] = marker.pose.pose.position.x;
-  markerPosition[1] = marker.pose.pose.position.y;
-  markerPosition[2] = marker.pose.pose.position.z;
-
-  q_marker[1] = marker.pose.pose.orientation.x;
-  q_marker[2] = marker.pose.pose.orientation.y;
-  q_marker[3] = marker.pose.pose.orientation.z;
-  q_marker[0] = marker.pose.pose.orientation.w;
-
-  quaternion2euler(q_marker, euler_marker);
-
-  markerOrientation[0] = euler_marker[0];
-  markerOrientation[1] = euler_marker[1];
-  markerOrientation[2] = euler_marker[2];
-
-  getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
-  markerGlobalFrame = UAV2GlobalFrame * cam2UAV * markerTRMatrix;
-
-  getAnglesFromRotationTranslationMatrix(markerGlobalFrame, markerOrientation);
-
-
-  //marker.pose.pose.position.x = markerGlobalFrame(0,3);
-  //marker.pose.pose.position.y = markerGlobalFrame(1,3);
-  //marker.pose.pose.position.z = markerGlobalFrame(2,3);
-
-  uav_pose.pose.position.x = (markerGlobalFrame(0,3))*cos(-markerOrientation[2]) - (markerGlobalFrame(1,3))*sin(-markerOrientation[2]);
-  uav_pose.pose.position.y =  (markerGlobalFrame(0,3))*sin(-markerOrientation[2]) + (markerGlobalFrame(1,3))*cos(-markerOrientation[2]);
-  uav_pose.pose.position.z = -markerGlobalFrame(2,3);
-
-  if (use_soft) {
-    uav_pose.pose.position.x += markerOffset[0];
-    uav_pose.pose.position.y += markerOffset[1];
-    uav_pose.pose.position.z += markerOffset[2];
-  }
-
-
-  Eigen::Matrix3d rotation_matrix = markerGlobalFrame.block<3,3>(0,0);
-  Eigen::Quaterniond quaternion(rotation_matrix);
-  uav_pose.pose.orientation.x = quaternion.x();
-  uav_pose.pose.orientation.y = quaternion.y();
-  uav_pose.pose.orientation.z = quaternion.z();
-  uav_pose.pose.orientation.w = quaternion.w();
-
-  uav_pose.header.stamp = marker.header.stamp;
-  uav_pose.header.frame_id = "world";
-
-  return uav_pose;
-
 }
