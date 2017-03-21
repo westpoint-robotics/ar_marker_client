@@ -21,6 +21,7 @@ int main(int argc, char **argv)
   double rate_filt_time;
   double mean_x = 0, mean_y = 0, mean_z = 0;
   double diff_x = 0, diff_y = 0, diff_z = 0;
+  double filt_const;
   std::string odometry_callback, cam2imuTf;
   std::string camera_frame;  // todo, add as a param
   std::vector<int> marker_ids;
@@ -47,6 +48,8 @@ int main(int argc, char **argv)
   private_node_handle_.getParam("marker_transform_sample_num", transform_sample_num);
   private_node_handle_.param("soft_data_vector_length", filter_length, int(100));
   private_node_handle_.param("use_soft", use_soft, false);
+  private_node_handle_.param("filter_const", filt_const, 0.9);
+
 
   ROS_INFO("Number of marker ids %d", (int)marker_ids.size());
 
@@ -86,6 +89,7 @@ int main(int argc, char **argv)
   mtracker->setRateFiltVelocity(rate_filt_velocity);
   mtracker->setMinMarkerDetection(min_marker_detection);
   mtracker->setUseSoftFlag(use_soft);
+  mtracker->setFilterConst(filt_const);
   mtracker->setMarkerTransformSampleNum(transform_sample_num);
   ROS_INFO("Initializing publisher.");
   mtracker->initUavPosePublishers(n);

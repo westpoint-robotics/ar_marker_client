@@ -229,6 +229,10 @@ void MultiMarkerTracker::setMinMarkerDetection(int detection_number) {
     min_detection_count = detection_number;
 }
 
+void MultiMarkerTracker::setFilterConst(double filter_const) {
+   this->filt_const = filter_const;
+}
+
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
   //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) != marker_ids.end());
   for(int i=0; i < marker_ids.size(); i++) {
@@ -667,7 +671,7 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
 
                 }
                 else {
-                    ROS_INFO("Ignoring measurement from marker %d", marker_ids[i]);
+                    //ROS_INFO("Ignoring measurement from marker %d", marker_ids[i]);
                 }
 
               //}
@@ -721,6 +725,11 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position_filtered.point.x = uav_position_filtered.point.x / filtered_markers_detected;
     uav_position_filtered.point.y = uav_position_filtered.point.y / filtered_markers_detected;
     uav_position_filtered.point.z = uav_position_filtered.point.z / filtered_markers_detected;
+
+    // implement pt1 filter;
+    uav_position_filtered.point.x = (1 - filt_const) * uav_position_filtered.point.x + filt_const * uav_position_filtered_old.point.x;
+    uav_position_filtered.point.y = (1 - filt_const) * uav_position_filtered.point.y + filt_const * uav_position_filtered_old.point.y;
+    uav_position_filtered.point.z = (1 - filt_const) * uav_position_filtered.point.z + filt_const * uav_position_filtered_old.point.z;
 
     if (use_soft) {
       if (isAlignedMarkerWithSoft()) {

@@ -58,6 +58,7 @@ public:
     bool isAlignedMarkerWithSoft();
     void setAlignedFlag(bool flag);
     void setUseSoftFlag(bool flag);
+    void setFilterConst(double filter_const);
     void setMarkerTransformSampleNum(int samples_num);
     bool newSoftData;
     bool newBaseMarkerData;
