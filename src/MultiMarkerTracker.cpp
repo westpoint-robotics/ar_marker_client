@@ -429,37 +429,6 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   uav_pose.pose.orientation.z = quaternion.z();
   uav_pose.pose.orientation.w = quaternion.w();
 
-  if (isAlignedMarkerWithSoft()) {
-
-      tf::Transform uavMarkerPose;
-
-      uavMarkerPose.setOrigin(tf::Vector3(uav_pose.pose.position.x,
-                                          uav_pose.pose.position.y,
-                                          uav_pose.pose.position.z));
-      uavMarkerPose.setRotation(tf::Quaternion(uav_pose.pose.orientation.x,
-                                               uav_pose.pose.orientation.y,
-                                               uav_pose.pose.orientation.z,
-                                               uav_pose.pose.orientation.w));
-
-      uavMarkerPose = softToMarker * uavMarkerPose;
-
-      uav_pose.pose.position.x = uavMarkerPose.getOrigin().getX();
-      uav_pose.pose.position.y = uavMarkerPose.getOrigin().getY();
-      uav_pose.pose.position.z = uavMarkerPose.getOrigin().getZ();
-
-      uav_pose.pose.orientation.x = uavMarkerPose.getRotation().getX();
-      uav_pose.pose.orientation.y = uavMarkerPose.getRotation().getY();
-      uav_pose.pose.orientation.z = uavMarkerPose.getRotation().getZ();
-      uav_pose.pose.orientation.w = uavMarkerPose.getRotation().getW();
-
-
-    /*
-    uav_pose.pose.position.x += markerOffset[0];
-    uav_pose.pose.position.y += markerOffset[1];
-    uav_pose.pose.position.z += markerOffset[2];
-    */
-  }
-
   uav_pose.header.stamp = marker.header.stamp;
   uav_pose.header.frame_id = "world";
 
@@ -471,144 +440,144 @@ void MultiMarkerTracker::addNewFrames() {
 
   tf::Transform tf_transform;
 
-  for (int i = 0; i < marker_ids.size(); i++) {
+    for (int i = 0; i < marker_ids.size(); i++) {
 
-      if ((!marker_frame_added[marker_ids[i]]) && marker_detected[marker_ids[i]]) {
+        if ((!marker_frame_added[marker_ids[i]]) && marker_detected[marker_ids[i]]) {
 
-          //ROS_INFO("Marker %d detected but its frame not yet added!", marker_ids[i]);
+            //ROS_INFO("Marker %d detected but its frame not yet added!", marker_ids[i]);
 
-          if (isMainMarker(marker_ids[i])) {
+            if (isMainMarker(marker_ids[i])) {
 
-              // publish zero transform to cam3
-              tf::Vector3 zero_origin(0,0,0);
-              tf::Quaternion unit_quaternion(0,0,0,1);
-              tf_transform.setOrigin( zero_origin);
-              tf_transform.setRotation( unit_quaternion);
-              tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
+                // publish zero transform to cam3
+                tf::Vector3 zero_origin(0,0,0);
+                tf::Quaternion unit_quaternion(0,0,0,1);
+                tf_transform.setOrigin( zero_origin);
+                tf_transform.setRotation( unit_quaternion);
+                tf_broadcaster.sendTransform(tf::StampedTransform(tf_transform, ros::Time::now(), camera_frame.c_str(), marker_frames[marker_ids[i]].c_str()));
 
-              tf::StampedTransform tf_stamped;
-              tf_stamped.setData(tf_transform);
-              marker_transform_stamped[marker_ids[i]].setData(tf_transform);
-              marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
-              marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
-              marker_frame_added[marker_ids[i]] = true;
-              ROS_INFO("Adding marker frame %d", marker_ids[i]);
-          }
-          else {
+                tf::StampedTransform tf_stamped;
+                tf_stamped.setData(tf_transform);
+                marker_transform_stamped[marker_ids[i]].setData(tf_transform);
+                marker_transform_stamped[marker_ids[i]].frame_id_ = camera_frame.c_str();
+                marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
+                marker_frame_added[marker_ids[i]] = true;
+                ROS_INFO("Adding marker frame %d", marker_ids[i]);
+            }
+            else {
 
-              //ROS_INFO("Considering marker %d", marker_ids[i]);
+                //ROS_INFO("Considering marker %d", marker_ids[i]);
 
-              if (marker_base_frames.find(marker_ids[i]) == marker_base_frames.end()) {
-                 // base frame not set for marker i
-                 //ROS_INFO("Base frame for marker %d not added", marker_ids[i]);
+                if (marker_base_frames.find(marker_ids[i]) == marker_base_frames.end()) {
+                   // base frame not set for marker i
+                   //ROS_INFO("Base frame for marker %d not added", marker_ids[i]);
 
-                 int marker_base_frame_id = getBaseMarker();
+                   int marker_base_frame_id = getBaseMarker();
 
-                 if (marker_base_frame_id >= 0) {
-                     // set marker base for marker
-                     ROS_INFO("For marker %d adding base marker %d", marker_ids[i], marker_base_frame_id);
-                     marker_base_frames[marker_ids[i]] = marker_base_frame_id;
-                 }
+                   if (marker_base_frame_id >= 0) {
+                       // set marker base for marker
+                       ROS_INFO("For marker %d adding base marker %d", marker_ids[i], marker_base_frame_id);
+                       marker_base_frames[marker_ids[i]] = marker_base_frame_id;
+                   }
 
-              }
-              else {
-                  // base frame for the marker already set, try to find transform
+                }
+                else {
+                    // base frame for the marker already set, try to find transform
 
-                  //ROS_INFO("Base frame for marker %d already added", marker_ids[i]);
+                    //ROS_INFO("Base frame for marker %d already added", marker_ids[i]);
 
-                  if (marker_detected[marker_base_frames[marker_ids[i]]]) {
+                    if (marker_detected[marker_base_frames[marker_ids[i]]]) {
 
-                      // add tf betweer marker and main marker frame
-                      tf::StampedTransform transform_stamped;
-                      try {
-                        tf_listener.lookupTransform(marker_frames_corrected[marker_base_frames[marker_ids[i]]].c_str(), marker_frames_corrected[marker_ids[i]].c_str(),
-                        ros::Time(0), transform_stamped);
-                      }
-                      catch (tf::TransformException &ex) {
-                         ROS_ERROR("%s",ex.what());
-                         continue;
-                      }
+                        // add tf betweer marker and main marker frame
+                        tf::StampedTransform transform_stamped;
+                        try {
+                          tf_listener.lookupTransform(marker_frames_corrected[marker_base_frames[marker_ids[i]]].c_str(), marker_frames_corrected[marker_ids[i]].c_str(),
+                          ros::Time(0), transform_stamped);
+                        }
+                        catch (tf::TransformException &ex) {
+                           ROS_ERROR("%s",ex.what());
+                           continue;
+                        }
 
-                      tf_transform.setOrigin( transform_stamped.getOrigin());
-                      tf_transform.setRotation( transform_stamped.getRotation());
+                        tf_transform.setOrigin( transform_stamped.getOrigin());
+                        tf_transform.setRotation( transform_stamped.getRotation());
 
-                      marker_transforms[marker_ids[i]].push_back(tf_transform);
+                        marker_transforms[marker_ids[i]].push_back(tf_transform);
 
-                      if (marker_transforms[marker_ids[i]].size() == marker_transform_samples_num) {
+                        if (marker_transforms[marker_ids[i]].size() == marker_transform_samples_num) {
 
-                          ROS_INFO("Collected %d samples for transform between marker %d and marker %d", marker_transform_samples_num, marker_base_frames[marker_ids[i]], marker_ids[i]);
-                          tf::Transform marker_transform;
-                          tf::Vector3 position(0,0,0);
-                          tf::Quaternion rotation(0,0,0,1);
-                          std::vector<double> marker_z;
-                          double medfilt_value;
-                          int medfilt_value_index;
+                            ROS_INFO("Collected %d samples for transform between marker %d and marker %d", marker_transform_samples_num, marker_base_frames[marker_ids[i]], marker_ids[i]);
+                            tf::Transform marker_transform;
+                            tf::Vector3 position(0,0,0);
+                            tf::Quaternion rotation(0,0,0,1);
+                            std::vector<double> marker_z;
+                            double medfilt_value;
+                            int medfilt_value_index;
 
-                          // average position and orientation
+                            // average position and orientation
 
-                          int transform_samples_num = marker_transforms[marker_ids[i]].size();
-
-
-                          position  = marker_transforms[marker_ids[i]][0].getOrigin() / transform_samples_num;
-                          rotation  = marker_transforms[marker_ids[i]][0].getRotation();
-                          marker_z.push_back(marker_transforms[marker_ids[i]][0].getOrigin().getZ());
-
-                          for(int j = 1; j < transform_samples_num ; j++) {
-
-                             position = position + marker_transforms[marker_ids[i]][j].getOrigin() / transform_samples_num;
-                             rotation = rotation.slerp(marker_transforms[marker_ids[i]][j].getRotation(), 1 / (j + 1));
-                             marker_z.push_back(marker_transforms[marker_ids[i]][j].getOrigin().getZ());
-                          }
-
-                          // median filter on z component
+                            int transform_samples_num = marker_transforms[marker_ids[i]].size();
 
 
-                          /*
-                          std::sort(marker_z.begin(), marker_z.end());
-                          medfilt_value = marker_z[0]; // marker_z[(int)(marker_z.size() / 2.0)];
+                            position  = marker_transforms[marker_ids[i]][0].getOrigin() / (transform_samples_num - min_detection_count);
+                            rotation  = marker_transforms[marker_ids[i]][0].getRotation();
+                            marker_z.push_back(marker_transforms[marker_ids[i]][min_detection_count].getOrigin().getZ());
 
-                          for (int j = 0; j < transform_samples_num; j++) {
+                            for(int j = min_detection_count + 1; j < transform_samples_num ; j++) {
 
-                              if (fabs(marker_transforms[marker_ids[i]][j].getOrigin().getZ()- medfilt_value) < 0.001) {
-                                  medfilt_value_index = j;
-                                  ROS_INFO("Marker %d med filt value %.2f index %d", i, medfilt_value,  medfilt_value_index);
-                                  break;
-                              }
+                               position = position + marker_transforms[marker_ids[i]][j].getOrigin() / (transform_samples_num - min_detection_count);
+                               rotation = rotation.slerp(marker_transforms[marker_ids[i]][j].getRotation(), 1 / (j - min_detection_count + 1));
+                               marker_z.push_back(marker_transforms[marker_ids[i]][j].getOrigin().getZ());
+                            }
 
-                          }
-
+                            // median filter on z component
 
 
+                            /*
+                            std::sort(marker_z.begin(), marker_z.end());
+                            medfilt_value = marker_z[0]; // marker_z[(int)(marker_z.size() / 2.0)];
 
-                          marker_transform.setOrigin( marker_transforms[marker_ids[i]][medfilt_value_index].getOrigin());
-                          marker_transform.setRotation(marker_transforms[marker_ids[i]][medfilt_value_index].getRotation());
-                          */
+                            for (int j = 0; j < transform_samples_num; j++) {
 
-                          marker_transform.setOrigin( position);
-                          marker_transform.setRotation( rotation);
-                          tf_broadcaster.sendTransform(tf::StampedTransform(marker_transform, ros::Time::now(), marker_frames[marker_base_frames[marker_ids[i]]].c_str(), marker_frames[marker_ids[i]].c_str()));
+                                if (fabs(marker_transforms[marker_ids[i]][j].getOrigin().getZ()- medfilt_value) < 0.001) {
+                                    medfilt_value_index = j;
+                                    ROS_INFO("Marker %d med filt value %.2f index %d", i, medfilt_value,  medfilt_value_index);
+                                    break;
+                                }
 
-                          marker_transform_stamped[marker_ids[i]].setData(marker_transform);
-                          marker_transform_stamped[marker_ids[i]].frame_id_ =  marker_frames[marker_base_frames[marker_ids[i]]].c_str();
-                          marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
-                          marker_frame_added[marker_ids[i]] = true;
-                          ROS_INFO("Adding marker frame %d", marker_ids[i]);
+                            }
 
-                          tf::Matrix3x3 m(marker_transform.getRotation());
-                          double roll, pitch, yaw;
-                          m.getRPY(roll, pitch, yaw);
 
-                          ROS_INFO("Adding child frame %s with parent %s, translation %.2f %.2f %.2f, rpy %.2f %.2f %.2f",
-                                   marker_frames_corrected[marker_ids[i]].c_str(), marker_frames_corrected[marker_base_frames[marker_ids[i]]].c_str(),
-                                   marker_transform.getOrigin().getX(), marker_transform.getOrigin().getY(), marker_transform.getOrigin().getZ(),
-                                   roll, pitch, yaw);
 
-                      }
-                  }
-              }
-          }
-      }
-   }
+
+                            marker_transform.setOrigin( marker_transforms[marker_ids[i]][medfilt_value_index].getOrigin());
+                            marker_transform.setRotation(marker_transforms[marker_ids[i]][medfilt_value_index].getRotation());
+                            */
+
+                            marker_transform.setOrigin( position);
+                            marker_transform.setRotation( rotation);
+                            tf_broadcaster.sendTransform(tf::StampedTransform(marker_transform, ros::Time::now(), marker_frames[marker_base_frames[marker_ids[i]]].c_str(), marker_frames[marker_ids[i]].c_str()));
+
+                            marker_transform_stamped[marker_ids[i]].setData(marker_transform);
+                            marker_transform_stamped[marker_ids[i]].frame_id_ =  marker_frames[marker_base_frames[marker_ids[i]]].c_str();
+                            marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
+                            marker_frame_added[marker_ids[i]] = true;
+                            ROS_INFO("Adding marker frame %d", marker_ids[i]);
+
+                            tf::Matrix3x3 m(marker_transform.getRotation());
+                            double roll, pitch, yaw;
+                            m.getRPY(roll, pitch, yaw);
+
+                            ROS_INFO("Adding child frame %s with parent %s, translation %.2f %.2f %.2f, rpy %.2f %.2f %.2f",
+                                     marker_frames_corrected[marker_ids[i]].c_str(), marker_frames_corrected[marker_base_frames[marker_ids[i]]].c_str(),
+                                     marker_transform.getOrigin().getX(), marker_transform.getOrigin().getY(), marker_transform.getOrigin().getZ(),
+                                     roll, pitch, yaw);
+
+                        }
+                    }
+                }
+            }
+        }
+     }
 }
 
 void MultiMarkerTracker::estimateUavPoseFromMarkers() {
@@ -642,6 +611,18 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
                                                                uav_relative_pose[marker_ids[i]].pose.orientation.w));
 
             uav_to_base_marker_tf = marker_to_base_marker_tf * uav_to_marker_transform;
+
+            if (use_soft && isAlignedMarkerWithSoft()) {
+
+              uav_to_base_marker_tf = softToMarker * uav_to_base_marker_tf;
+
+              /*
+              uav_pose.pose.position.x += markerOffset[0];
+              uav_pose.pose.position.y += markerOffset[1];
+              uav_pose.pose.position.z += markerOffset[2];
+              */
+            }
+
             uav_pose[marker_ids[i]].pose.position.x = uav_to_base_marker_tf.getOrigin().getX();
             uav_pose[marker_ids[i]].pose.position.y = uav_to_base_marker_tf.getOrigin().getY();
             uav_pose[marker_ids[i]].pose.position.z = uav_to_base_marker_tf.getOrigin().getZ();

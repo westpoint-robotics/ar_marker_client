@@ -4,7 +4,7 @@
     <arg name="max_new_marker_error" default="0.1" /> <!--0.08 -->
     <arg name="max_track_error" default="1" />  <!--0.2 -->
     <arg name="cam_image_topic" default="/euroc3/cam3/image_raw" />
-    <arg name="cam_info_topic" default="/euroc3/cam3/info" />	
+    <arg name="cam_info_topic" default="/euroc3/cam3/camera_info" />	
     <arg name="output_frame" default="/cam3" />
     <arg name="frequency" default="20" />
     <arg name="namespace" default="euroc3" />
@@ -18,5 +18,6 @@
     <include file="$(find ar_marker_client)/launch/multi_marker_tracker.launch">
         <arg name="namespace" value="$(arg namespace)"/>
     </include>
-   
+
+
 </launch>
