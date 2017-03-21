@@ -540,6 +540,9 @@ void MultiMarkerTracker::addNewFrames() {
                           tf::Transform marker_transform;
                           tf::Vector3 position(0,0,0);
                           tf::Quaternion rotation(0,0,0,1);
+                          std::vector<double> marker_z;
+                          double medfilt_value;
+                          int medfilt_value_index;
 
                           // average position and orientation
 
@@ -548,13 +551,38 @@ void MultiMarkerTracker::addNewFrames() {
 
                           position  = marker_transforms[marker_ids[i]][0].getOrigin() / transform_samples_num;
                           rotation  = marker_transforms[marker_ids[i]][0].getRotation();
+                          marker_z.push_back(marker_transforms[marker_ids[i]][0].getOrigin().getZ());
 
                           for(int j = 1; j < transform_samples_num ; j++) {
 
                              position = position + marker_transforms[marker_ids[i]][j].getOrigin() / transform_samples_num;
                              rotation = rotation.slerp(marker_transforms[marker_ids[i]][j].getRotation(), 1 / (j + 1));
+                             marker_z.push_back(marker_transforms[marker_ids[i]][j].getOrigin().getZ());
                           }
 
+                          // median filter on z component
+
+
+                          /*
+                          std::sort(marker_z.begin(), marker_z.end());
+                          medfilt_value = marker_z[0]; // marker_z[(int)(marker_z.size() / 2.0)];
+
+                          for (int j = 0; j < transform_samples_num; j++) {
+
+                              if (fabs(marker_transforms[marker_ids[i]][j].getOrigin().getZ()- medfilt_value) < 0.001) {
+                                  medfilt_value_index = j;
+                                  ROS_INFO("Marker %d med filt value %.2f index %d", i, medfilt_value,  medfilt_value_index);
+                                  break;
+                              }
+
+                          }
+
+
+
+
+                          marker_transform.setOrigin( marker_transforms[marker_ids[i]][medfilt_value_index].getOrigin());
+                          marker_transform.setRotation(marker_transforms[marker_ids[i]][medfilt_value_index].getRotation());
+                          */
 
                           marker_transform.setOrigin( position);
                           marker_transform.setRotation( rotation);
