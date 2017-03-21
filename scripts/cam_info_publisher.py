@@ -35,7 +35,7 @@ if __name__ == '__main__':
     cam_info_msg.P = yamlData['projection_matrix']['data']
     cam_info_msg.K = yamlData['camera_matrix']['data']  
     
-    cam_info_publisher = rospy.Publisher('/euroc3/cam3/camera_info', CameraInfo, queue_size=5)
+    cam_info_publisher = rospy.Publisher('/euroc3/cam3/info', CameraInfo, queue_size=5)
     img_sub = rospy.Subscriber('/euroc3/cam3/image_raw', Image, image_sub)
     
     while not rospy.is_shutdown():

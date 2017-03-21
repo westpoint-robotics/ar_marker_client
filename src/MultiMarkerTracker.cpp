@@ -155,7 +155,7 @@ void MultiMarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
 }
 
-void MultiMarkerTracker::softCallback(const geometry_msgs::TransformStamped &msg)
+void MultiMarkerTracker::softCallback(const geometry_msgs::PoseStamped &msg)
 {
   //double soft_q[4], soft_euler[3];
 

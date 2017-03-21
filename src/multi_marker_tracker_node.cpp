@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MultiMarkerTracker::ar_track_alvar_sub, mtracker);
   //ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MultiMarkerTracker::odometryCallback, mtracker);
   ros::Subscriber imu_message = n.subscribe("/euroc3/imu", 1, &MultiMarkerTracker::imuCallback, mtracker);
-  ros::Subscriber soft_message = n.subscribe("/euroc3/soft/soft_transform", 1, &MultiMarkerTracker::softCallback, mtracker);
+  ros::Subscriber soft_message = n.subscribe("/euroc3/soft/pose_map", 1, &MultiMarkerTracker::softCallback, mtracker);
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
@@ -118,8 +118,16 @@ int main(int argc, char **argv)
               meas_number++;
               //std::cout<<meas_number<<std::endl;
 
-              tf::transformMsgToTF(mtracker->softData.transform, uavSoftPose);
-              uavSoftPose.setRotation(tf::Quaternion(0,0,0,1));
+              //tf::transformMsgToTF(mtracker->softData.transform, uavSoftPose);
+              uavSoftPose.setOrigin(tf::Vector3(mtracker->softData.pose.position.x,
+                                                  mtracker->softData.pose.position.y,
+                                                  mtracker->softData.pose.position.z));
+              uavSoftPose.setRotation(tf::Quaternion(mtracker->softData.pose.orientation.x,
+                                                       mtracker->softData.pose.orientation.y,
+                                                       mtracker->softData.pose.orientation.z,
+                                                       mtracker->softData.pose.orientation.w));
+
+              //uavSoftPose.setRotation(tf::Quaternion(0,0,0,1));
 
               uavMarkerPose.setOrigin(tf::Vector3(mtracker->uav_relative_pose[marker_ids[0]].pose.position.x,
                                                   mtracker->uav_relative_pose[marker_ids[0]].pose.position.y,

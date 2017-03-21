@@ -37,7 +37,7 @@ public:
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
     void imuCallback(const sensor_msgs::Imu &msg);
-    void softCallback(const geometry_msgs::TransformStamped &msg);
+    void softCallback(const geometry_msgs::PoseStamped &msg);
     void quaternion2euler(double *quaternion, double *euler);
     void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *orientationEuler, double *position);
@@ -117,7 +117,7 @@ public:
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;
     tf::TransformListener tf_listener;
-    geometry_msgs::TransformStamped softData;
+    geometry_msgs::PoseStamped softData;
     tf::Transform softToMarker;
     bool alignedFlag;
     bool use_soft;
