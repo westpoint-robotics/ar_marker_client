@@ -119,7 +119,7 @@ int main(int argc, char **argv)
               //std::cout<<meas_number<<std::endl;
 
               tf::transformMsgToTF(mtracker->softData.transform, uavSoftPose);
-              //uavSoftPose.setRotation(tf::Quaternion(0,0,0,1));
+              uavSoftPose.setRotation(tf::Quaternion(0,0,0,1));
 
               uavMarkerPose.setOrigin(tf::Vector3(mtracker->uav_relative_pose[marker_ids[0]].pose.position.x,
                                                   mtracker->uav_relative_pose[marker_ids[0]].pose.position.y,
@@ -179,6 +179,7 @@ int main(int argc, char **argv)
 
                   softToMarker.setOrigin(position);
                   softToMarker.setRotation(rotation);
+                  //softToMarker.setRotation(tf::Quaternion(0,0,0,1));
 
                   mtracker->setMarkerOffset(softToMarker);
                   mtracker->setAlignedFlag(true);

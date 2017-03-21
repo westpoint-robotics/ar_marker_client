@@ -637,6 +637,7 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
             uav_position.point.y += uav_pose[marker_ids[i]].pose.position.y;
             uav_position.point.z += uav_pose[marker_ids[i]].pose.position.z;
             uav_position.header.stamp =  uav_pose[marker_ids[i]].header.stamp;
+            uav_position.header.frame_id = "world";
             markers_detected++;
 
             // rate filter
@@ -661,6 +662,7 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
                     uav_position_filtered.point.y += uav_pose[marker_ids[i]].pose.position.y;
                     uav_position_filtered.point.z += uav_pose[marker_ids[i]].pose.position.z;
                     uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
+                    uav_position_filtered.header.frame_id = "world";
                     filtered_markers_detected++;
 
                 }

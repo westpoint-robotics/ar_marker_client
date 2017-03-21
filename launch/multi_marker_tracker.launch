@@ -4,7 +4,7 @@
     
     <node name="multi_marker_tracker" pkg="ar_marker_client" type="multi_marker_tracker_node" ns="$(arg namespace)" output="screen" >
         <rosparam command="load" file="$(find ar_marker_client)/cfg/multi_marker_tracker.yaml" />
-        <remap from="/euroc3/soft/soft_transform" to="/euroc3/vrpn_client/raw_transform" />
+        <!--remap from="/euroc3/soft/soft_transform" to="/euroc3/vrpn_client/raw_transform" /-->
     </node>
     
 </launch>
