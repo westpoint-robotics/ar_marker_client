@@ -11,6 +11,8 @@ catkin_package(
   INCLUDE_DIRS launch
 )
 
+include_directories(${catkin_INCLUDE_DIRS})
+
 add_library(MarkerTracker src/MarkerTracker.cpp)
 target_link_libraries(MarkerTracker ${catkin_LIBRARIES})
 
