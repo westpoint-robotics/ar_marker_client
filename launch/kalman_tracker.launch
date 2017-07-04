@@ -15,6 +15,7 @@
     	<param name="vel_noise" value="$(arg vel_noise)"/>
     	<param name="measure_noise" value="$(arg measure_noise)"/>
         <param name="max_delay" value="$(arg max_delay)"/>
+        <remap from="kalman_tracker/ar_pose_marker" to="ar_pose_marker"/>
     </node>
 	
 </launch>
