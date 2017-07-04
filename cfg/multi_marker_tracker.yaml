@@ -1,10 +1,10 @@
-marker_ids: [10, 12, 11, 13]
+marker_ids: [5]
 min_marker_detection: 2
 rate_filt_velocity: 5
 rate_filt_time: 0.1
-cam2imuTf: "/parameters/cam2imu.yaml"
-camera_frame: "cam3"
+cam2imuTf: "/parameters/cam2imu_blackfly1.yaml"
+camera_frame: "camera"
 soft_data_vector_length: 40
 marker_transform_sample_num: 5
 filter_const: 0.01
-use_soft: true
+use_soft: false
