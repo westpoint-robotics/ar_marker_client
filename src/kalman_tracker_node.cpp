@@ -3,7 +3,7 @@
 
 
 KalmanTracker *ktracker;
-void params_callback(marker_tracker::KalmanConfig &config, uint32_t level);
+void params_callback(ar_marker_client::KalmanConfig &config, uint32_t level);
 
 /*--------------------------------------------------------------------
  * main()
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
 
 // dynamic reconfigure server callback
-void params_callback(marker_tracker::KalmanConfig &config, uint32_t level)
+void params_callback(ar_marker_client::KalmanConfig &config, uint32_t level)
 {
     ROS_INFO("Reconfigure request: q1, q2, r = %f %f %f ", config.pos_noise, config.vel_noise, config.measure_noise);
 

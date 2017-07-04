@@ -9,7 +9,7 @@ KalmanTracker::KalmanTracker(ros::NodeHandle n)
     pub_target_pose_f = nh.advertise<geometry_msgs::PoseStamped>("target_pose_f", 1);
     pub_target_vel_f = nh.advertise<geometry_msgs::TwistStamped>("target_vel_f", 1);
     pub_marker_found = nh.advertise<std_msgs::Int16>("marker_found", 1);
-    sub_marker = nh.subscribe("/euroc3/ar_pose_marker", 1, &KalmanTracker::ar_track_alvar_sub, this);
+    sub_marker = nh.subscribe("ar_pose_marker", 1, &KalmanTracker::ar_track_alvar_sub, this);
 
     nh.param<int>("target_id", target_id, 7);
     nh.param<int>("rate", ros_rate, 30);

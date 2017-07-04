@@ -47,8 +47,8 @@ public:
     geometry_msgs::Pose pose;
     geometry_msgs::Twist vel;
 
-    dynamic_reconfigure::Server<marker_tracker::KalmanConfig> server;
-    dynamic_reconfigure::Server<marker_tracker::KalmanConfig>::CallbackType params_call;
+    dynamic_reconfigure::Server<ar_marker_client::KalmanConfig> server;
+    dynamic_reconfigure::Server<ar_marker_client::KalmanConfig>::CallbackType params_call;
 
     void modelUpdate();
     void measureUpdate();
