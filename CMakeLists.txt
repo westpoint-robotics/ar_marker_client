@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp ar_track_alvar geometry_msgs dyna
 
 generate_dynamic_reconfigure_options(
   cfg/MarkerOffset.cfg
+  cfg/Kalman.cfg
 )
 
 catkin_package(
@@ -25,10 +26,10 @@ target_link_libraries(marker_tracker_node MarkerTracker ${catkin_LIBRARIES} yaml
 add_executable(multi_marker_tracker_node src/multi_marker_tracker_node.cpp)
 target_link_libraries(multi_marker_tracker_node MultiMarkerTracker ${catkin_LIBRARIES} yaml-cpp)
 
-#add_library(KalmanTracker src/KalmanTracker.cpp)
-#add_dependencies(KalmanTracker ${PROJECT_NAME}_gencfg)
-#target_link_libraries(KalmanTracker ${catkin_LIBRARIES})
+add_library(KalmanTracker src/KalmanTracker.cpp)
+add_dependencies(KalmanTracker ${PROJECT_NAME}_gencfg)
+target_link_libraries(KalmanTracker ${catkin_LIBRARIES})
 
-#add_executable(kalman_tracker_node src/kalman_tracker_node.cpp)
-#add_dependencies(kalman_tracker_node ${PROJECT_NAME}_gencfg)
-#target_link_libraries(kalman_tracker_node KalmanTracker ${catkin_LIBRARIES})
+add_executable(kalman_tracker_node src/kalman_tracker_node.cpp)
+add_dependencies(kalman_tracker_node ${PROJECT_NAME}_gencfg)
+target_link_libraries(kalman_tracker_node KalmanTracker ${catkin_LIBRARIES})
