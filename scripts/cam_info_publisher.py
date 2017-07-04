@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     rospack = rospkg.RosPack()
     
-    inputYaml = open(rospack.get_path('ar_marker_client') + '/cfg/euroc3_cam3.yaml', 'r')
+    inputYaml = open('/home/thaus/.ros/camera_info/15384700.yaml', 'r')
     yamlData = yaml.load(inputYaml)
     inputYaml.close()
     
@@ -35,11 +35,11 @@ if __name__ == '__main__':
     cam_info_msg.P = yamlData['projection_matrix']['data']
     cam_info_msg.K = yamlData['camera_matrix']['data']  
     
-    cam_info_publisher = rospy.Publisher('/euroc3/cam3/info', CameraInfo, queue_size=5)
-    img_sub = rospy.Subscriber('/euroc3/cam3/image_raw', Image, image_sub)
+    cam_info_publisher = rospy.Publisher('cam_info', CameraInfo, queue_size=5)
+    img_sub = rospy.Subscriber('image_raw', Image, image_sub)
     
     while not rospy.is_shutdown():
-        rospy.sleep(0.01)
+        rospy.sleep(0.005)
         #cam_info_msg.header.stamp = rospy.Time.now()
         #cam_info_msg.header.frame_id  = 'cam0'
     	#cam_info_publisher.publish(cam_info_msg)
