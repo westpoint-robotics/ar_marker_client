@@ -66,15 +66,15 @@ int main(int argc, char **argv)
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MultiMarkerTracker::ar_track_alvar_sub, mtracker);
   //ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MultiMarkerTracker::odometryCallback, mtracker);
-  ros::Subscriber imu_message = n.subscribe("/euroc3/imu", 1, &MultiMarkerTracker::imuCallback, mtracker);
-  ros::Subscriber soft_message = n.subscribe("/euroc3/soft/pose_map", 1, &MultiMarkerTracker::softCallback, mtracker);
+  ros::Subscriber imu_message = n.subscribe("imu", 1, &MultiMarkerTracker::imuCallback, mtracker);
+  ros::Subscriber soft_message = n.subscribe("pose_map", 1, &MultiMarkerTracker::softCallback, mtracker);
 
   // Create a publisher and name the topic.
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose_f", 1);
   ros::Publisher pub_marker0 = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/marker0", 1);
-  ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("detection_flag", 1);
+  ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("ar_tracker/detection_flag", 1);
 
   ROS_INFO("Initializing.");
 

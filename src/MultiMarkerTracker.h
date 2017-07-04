@@ -28,6 +28,23 @@
 #include <boost/lexical_cast.hpp>
 #include <stdio.h>
 
+#define MEDFILT_SIZE 5
+
+class MarkerFilterData
+{
+public:
+  int index;
+  ar_track_alvar_msgs::AlvarMarker marker;
+};
+
+bool MarkerComparator(const MarkerFilterData& marker1, const MarkerFilterData& marker2)
+{
+  // this is used for median filtering on pose stamped array
+  // we filter pose stamped using z component only, altough other options are available
+  // e.q. compare distance from origin
+  return (marker1.marker.pose.pose.position.z < marker2.marker.pose.pose.position.z); 
+}
+
 
 class MultiMarkerTracker {
 public:
@@ -120,9 +137,19 @@ public:
     tf::TransformListener tf_listener;
     geometry_msgs::PoseStamped softData;
     tf::Transform softToMarker;
+    tf::Transform uav_to_cam;
+    tf::Transform uav_imu;
     bool alignedFlag;
     bool use_soft;
 
+    std::map<int, std::vector<MarkerFilterData> > marker_filter_data;
+    std::map<int, int> filter_counter;
+    std::map<int, bool> filter_data_ready;
+
+
+
 };
+
+
 
 #endif /* MULTIMARKERTRACKER_H_ */
