@@ -6,5 +6,5 @@ cam2imuTf: "/parameters/cam2imu_blackfly1.yaml"
 camera_frame: "camera"
 soft_data_vector_length: 40
 marker_transform_sample_num: 5
-filter_const: 0.01
+filter_const: 0.2
 use_soft: false

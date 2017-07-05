@@ -391,9 +391,8 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
 
 
       // median filter
-      /*
+      
       MarkerFilterData marker_data;
-      marker_data.marker = marker;
 
       if (filter_counter.find(marker.id) == filter_counter.end()) {
         // marker found for the first time
@@ -402,6 +401,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
           //ROS_INFO("Initialized filter counter for marker id %d", marker.id);
       }
 
+      marker_data.marker = marker;
       marker_data.index = filter_counter[marker.id];
 
       if (!filter_data_ready[marker.id]) {
@@ -411,18 +411,90 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
          //ROS_INFO("Added marker filter data");
       }
       else {
+        // we have collected enough data,look for false positives
+        // before adding new marker data, check for false positive
+        // isolate false positives by comparing current marker z position with average z position of previous markers
 
-        marker_filter_data[marker.id][filter_counter[marker.id]] = marker_data;
-        filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % MEDFILT_SIZE;
-        // sort data and take middle one
-        //ROS_INFO("Executing medfilt");
-        std::vector<MarkerFilterData> temp_vector(MEDFILT_SIZE);
-        //ROS_INFO("Copying vectors.");
-        std::copy(marker_filter_data[marker.id].begin(), marker_filter_data[marker.id].end(), temp_vector.begin());
-        //ROS_INFO("Sorting.");
-        std::sort(temp_vector.begin(), temp_vector.end(), MarkerComparator);
-        //ROS_INFO("Getting medfilt value");
-        marker = temp_vector[MEDFILT_SIZE / 2 + 1].marker;
+        double average_z;
+        int index = filter_counter[marker.id];
+        int counter = 0;
+
+        while (true) {
+          average_z += marker_filter_data[marker.id][index].marker.pose.pose.position.z;
+          index = (index + 1 ) % MEDFILT_SIZE;
+          counter++;
+          if (index == filter_counter[marker.id])
+            break;
+        }
+        if (counter > 0) {
+            average_z /= counter;
+            if (fabs(marker_data.marker.pose.pose.position.z - average_z) < 1.0f) {
+
+                marker_filter_data[marker.id][filter_counter[marker.id]] = marker_data;
+                filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % MEDFILT_SIZE;
+                // sort data and take middle one
+                //ROS_INFO("Executing medfilt");
+                //std::vector<MarkerFilterData> temp_vector(MEDFILT_SIZE);
+                //ROS_INFO("Copying vectors.");
+                //std::copy(marker_filter_data[marker.id].begin(), marker_filter_data[marker.id].end(), temp_vector.begin());
+                //ROS_INFO("Sorting.");
+                
+
+                // don't do median filter
+                //std::sort(temp_vector.begin(), temp_vector.end(), MarkerComparator);
+                //ROS_INFO("Getting medfilt value");
+                //marker = temp_vector[MEDFILT_SIZE / 2 + 1].marker;
+                //ROS_INFO_STREAM("Choosing marker:   \n" << marker.pose.pose.position.z);
+
+
+                geometry_msgs::PoseStamped uav_pose;
+                uav_pose =  getUavPoseFromMarker(marker);
+                marker_detected[marker.id] = true;
+                marker_detected_counter[marker.id]++;
+                //ROS_INFO("Corrected position marker id %d, %.2f, %.2f, %.2f", marker.id, marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z);
+
+                // publish uav pose relative to the marker
+                //ROS_INFO("Publish uav pose relative to marker %d", marker.id);
+                uav_relative_pose_publishers[marker.id].publish(uav_pose);
+                uav_relative_pose[marker.id] = uav_pose;
+
+                if (isMainMarker(marker.id)) {
+                    newBaseMarkerData = true;
+                }
+
+                // publish corrected transform from cam to the detected marker
+                tf::Transform marker_to_uav, uav_to_marker;
+                marker_to_uav.setOrigin( tf::Vector3(uav_pose.pose.position.x, uav_pose.pose.position.y, uav_pose.pose.position.z));
+                marker_to_uav.setRotation( tf::Quaternion(uav_pose.pose.orientation.x, uav_pose.pose.orientation.y, uav_pose.pose.orientation.z, uav_pose.pose.orientation.w ));
+                //ROS_INFO("Camera frame %s, marker frame %s", camera_frame.c_str(), marker_frames_corrected[marker.id].c_str());
+                uav_to_marker = marker_to_uav.inverse();
+                tf_broadcaster.sendTransform(tf::StampedTransform(uav_to_marker, ros::Time::now(), camera_frame.c_str(),  marker_frames_corrected[marker.id].c_str()));
+
+                // publish corrected marker
+                geometry_msgs::PoseStamped marker_pose;
+                marker_pose.pose.position.x = uav_to_marker.getOrigin().getX();
+                marker_pose.pose.position.y = uav_to_marker.getOrigin().getY();
+                marker_pose.pose.position.z = uav_to_marker.getOrigin().getZ();
+                marker_pose.pose.orientation.x = uav_to_marker.getRotation().getX();
+                marker_pose.pose.orientation.y = uav_to_marker.getRotation().getY();
+                marker_pose.pose.orientation.z = uav_to_marker.getRotation().getZ();
+                marker_pose.pose.orientation.w = uav_to_marker.getRotation().getW();
+                marker_pose.header.stamp = marker.header.stamp;
+                marker_corrected_pose_publishers[marker.id].publish(marker_pose);
+
+            }
+            else {
+              ROS_INFO_STREAM("Detected false positive, ignoring marker: \n" << marker);
+
+            }        
+        }
+        else {
+          ROS_INFO("Not enough marker samples (id %d)to average", marker.id);
+        }
+
+     
+        
+
 
       }
 
@@ -430,45 +502,10 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
       if (!filter_data_ready[marker.id] && filter_counter[marker.id] == 0) {
           filter_data_ready[marker.id] = true;
       }
-      */
+  
       
 
      
-
-        geometry_msgs::PoseStamped uav_pose;
-        uav_pose =  getUavPoseFromMarker(marker);
-        marker_detected[marker.id] = true;
-        marker_detected_counter[marker.id]++;
-        //ROS_INFO("Corrected position marker id %d, %.2f, %.2f, %.2f", marker.id, marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z);
-
-        // publish uav pose relative to the marker
-        //ROS_INFO("Publish uav pose relative to marker %d", marker.id);
-        uav_relative_pose_publishers[marker.id].publish(uav_pose);
-        uav_relative_pose[marker.id] = uav_pose;
-
-        if (isMainMarker(marker.id)) {
-            newBaseMarkerData = true;
-        }
-
-        // publish corrected transform from cam to the detected marker
-        tf::Transform marker_to_uav, uav_to_marker;
-        marker_to_uav.setOrigin( tf::Vector3(uav_pose.pose.position.x, uav_pose.pose.position.y, uav_pose.pose.position.z));
-        marker_to_uav.setRotation( tf::Quaternion(uav_pose.pose.orientation.x, uav_pose.pose.orientation.y, uav_pose.pose.orientation.z, uav_pose.pose.orientation.w ));
-        //ROS_INFO("Camera frame %s, marker frame %s", camera_frame.c_str(), marker_frames_corrected[marker.id].c_str());
-        uav_to_marker = marker_to_uav.inverse();
-        tf_broadcaster.sendTransform(tf::StampedTransform(uav_to_marker, ros::Time::now(), camera_frame.c_str(),  marker_frames_corrected[marker.id].c_str()));
-
-        // publish corrected marker
-        geometry_msgs::PoseStamped marker_pose;
-        marker_pose.pose.position.x = uav_to_marker.getOrigin().getX();
-        marker_pose.pose.position.y = uav_to_marker.getOrigin().getY();
-        marker_pose.pose.position.z = uav_to_marker.getOrigin().getZ();
-        marker_pose.pose.orientation.x = uav_to_marker.getRotation().getX();
-        marker_pose.pose.orientation.y = uav_to_marker.getRotation().getY();
-        marker_pose.pose.orientation.z = uav_to_marker.getRotation().getZ();
-        marker_pose.pose.orientation.w = uav_to_marker.getRotation().getW();
-        marker_pose.header.stamp = marker.header.stamp;
-        marker_corrected_pose_publishers[marker.id].publish(marker_pose);
 
     }
     else {
