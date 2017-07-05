@@ -597,22 +597,24 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
 
   tf::Matrix3x3 m(marker_pose_imu.getRotation());
   double roll, pitch, yaw;
-  m.getEulerYPR(yaw, pitch, roll);
+  m.getRPY(roll, pitch, yaw);
 
   tf::Matrix3x3 m_imu(uav_imu.getRotation());
   double roll_imu, pitch_imu, yaw_imu;
-  m_imu.getEulerYPR(yaw_imu, pitch_imu, roll_imu, 1) ;
+  m_imu.getRPY(roll_imu, pitch_imu, yaw_imu) ;
   //ROS_INFO("Imu roll, pitch, yaw, %.2f, %.2f, %.2f", roll_imu, pitch_imu, yaw_imu);
+  // ignore yaw from imu
   quaternion.setRPY(roll_imu, pitch_imu, 0);
   uav_imu.setRotation(quaternion);
 
+  // ignore roll and pitch from marker and set from imu
   quaternion.setRPY(-roll_imu, -pitch_imu, yaw);
   marker_pose_imu.setRotation(quaternion);
 
-  // add offset for camera to imu
+  // transform marker to world frame
   marker_pose_world = uav_imu * marker_pose_imu;
 
-  uav_pose_world = marker_pose_imu.inverse();
+  uav_pose_world = marker_pose_world.inverse();
 
   uav_pose.pose.position.x = uav_pose_world.getOrigin().getX();
   uav_pose.pose.position.y = uav_pose_world.getOrigin().getY();
