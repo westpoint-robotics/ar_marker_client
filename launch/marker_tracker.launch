@@ -2,7 +2,7 @@
   <arg name="marker_size" default="5.5"/>
   <arg name="max_new_marker_error" default="0.1"/>
   <arg name="max_track_error" default="1"/>
-  <arg name="cam_image_topic" default="/camera/image_raw"/>
+  <arg name="cam_image_topic" default="/camera/image_raw_filtered"/>
   <arg name="cam_info_topic" default="/camera/cam_info"/>
   <arg name="output_frame" default="camera"/>
   <arg name="freq" default="20"/>

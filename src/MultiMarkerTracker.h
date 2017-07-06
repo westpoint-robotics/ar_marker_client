@@ -25,6 +25,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
 #include <boost/lexical_cast.hpp>
 #include <stdio.h>
 
@@ -92,6 +93,10 @@ public:
     void setRateFiltVelocity(double velocity);
     void setRateFiltTime(double time);
     void setMinMarkerDetection(int detection_number);
+
+    void eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix, double roll, double pitch, double yaw);
+    void rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix, double &roll, double &pitch, double &yaw);
+    void matrixTFToEigen(const tf::Matrix3x3 &t, Eigen::Matrix3d &e);
 
     int first_meas;
     //int usv_id;

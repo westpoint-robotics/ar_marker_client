@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   //std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
 
   //std::cout << path << std::endl;
-  //mtracker->LoadParameters(path + cam2imuTf);
+  mtracker->LoadParameters(path + cam2imuTf);
 
   ros::Subscriber sub_message = n.subscribe("ar_pose_marker", 1, &MultiMarkerTracker::ar_track_alvar_sub, mtracker);
   //ros::Subscriber odom_message = n.subscribe(odometry_callback, 1, &MultiMarkerTracker::odometryCallback, mtracker);

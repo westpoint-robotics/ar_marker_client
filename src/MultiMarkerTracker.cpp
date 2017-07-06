@@ -57,7 +57,7 @@ MultiMarkerTracker::MultiMarkerTracker() {
 MultiMarkerTracker::~MultiMarkerTracker() {
 	// TODO Auto-generated destructor stub
 }
-/*
+
 void MultiMarkerTracker::LoadParameters(std::string file)
 {
   // First open .yaml file
@@ -65,13 +65,14 @@ void MultiMarkerTracker::LoadParameters(std::string file)
   YAML::Node config = YAML::LoadFile(file);
   std::vector<double> cam2imu_vector;
   cam2imu_vector = config["cam2imu"].as<std::vector<double> >();
-  cam2UAV << cam2imu_vector[0], cam2imu_vector[1], cam2imu_vector[2], cam2imu_vector[3], //-0.003 - ako se optitrack marker ne pomice
+  uav2cam << cam2imu_vector[0], cam2imu_vector[1], cam2imu_vector[2], cam2imu_vector[3], //-0.003 - ako se optitrack marker ne pomice
              cam2imu_vector[4], cam2imu_vector[5], cam2imu_vector[6], cam2imu_vector[7], //0.0231 - ako se optitrack marker ne pomice
              cam2imu_vector[8], cam2imu_vector[9], cam2imu_vector[10], cam2imu_vector[11], //-0.1148 - ako se optitrack marker ne pomice
              cam2imu_vector[12], cam2imu_vector[13], cam2imu_vector[14], cam2imu_vector[15];
+
+  ROS_INFO_STREAM("UAV2CAM parameters\n" << uav2cam);
   
 }
-*/
 
 void MultiMarkerTracker::quaternion2euler(double *quaternion, double *euler)
 {
@@ -128,6 +129,44 @@ void MultiMarkerTracker::getRotationTranslationMatrix(Eigen::Matrix4d &rotationT
 	                             0,   0,   0,   1;
 }
 
+void MultiMarkerTracker::eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix,
+  double roll, double pitch, double yaw)
+{
+  double r11, r12, r13, r21, r22, r23, r31, r32, r33;
+
+  r11 = cos(pitch)*cos(yaw);
+
+  r12 = -cos(pitch)*sin(yaw);
+
+  r13 = sin(pitch);
+
+  r21 = cos(roll)*sin(yaw) + cos(yaw)*sin(roll)*sin(pitch);
+
+  r22 = cos(roll)*cos(yaw) - sin(roll)*sin(pitch)*sin(yaw);
+
+  r23 = -cos(pitch)*sin(roll);
+
+  r31 = sin(roll)*sin(yaw) - cos(roll)*cos(yaw)*sin(pitch);
+
+  r32 = cos(yaw)*sin(roll) + cos(roll)*sin(pitch)*sin(yaw);
+
+  r33 = cos(roll)*cos(pitch);
+
+
+  rotationMatrix << r11, r12, r13,
+                    r21, r22, r23,
+                    r31, r32, r33;
+}
+
+void MultiMarkerTracker::rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix,
+  double &roll, double &pitch, double &yaw)
+{
+  roll = atan2(-rotationMatrix(1,2), rotationMatrix(2,2));
+  pitch = asin(rotationMatrix(0,2));
+  yaw = atan2(-rotationMatrix(0,1), rotationMatrix(0,0));
+
+}
+
 void MultiMarkerTracker::getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
  double *angles)
 {
@@ -147,6 +186,13 @@ void MultiMarkerTracker::getAnglesFromRotationTranslationMatrix(Eigen::Matrix4d 
   angles[0] = roll;
   angles[1] = pitch;
   angles[2] = yaw;
+}
+
+void MultiMarkerTracker::matrixTFToEigen(const tf::Matrix3x3 &t, Eigen::Matrix3d &e) {
+
+  e << t[0][0], t[0][1], t[0][2],
+       t[1][0], t[1][1], t[1][2],
+       t[2][0], t[2][1], t[2][2];
 }
 
 void MultiMarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
@@ -520,100 +566,45 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   // input ar marker - position of the marker w.r.t the UAV camera
   // output pose stamped - position of the UAV w.r.t. the marker frame
 
-  double q_marker[4], euler_marker[3];
   geometry_msgs::PoseStamped uav_pose;
-  tf::Transform marker_pose_imu, uav_pose_imu;
-
-  /*
-  q_marker[1] = marker.pose.pose.orientation.x;
-  q_marker[2] = marker.pose.pose.orientation.y;
-  q_marker[3] = marker.pose.pose.orientation.z;
-  q_marker[0] = marker.pose.pose.orientation.w;
-
-  
-  quaternion2euler(q_marker, euler_marker);
-
-  markerOrientation[0] = euler_marker[0];
-  markerOrientation[1] = euler_marker[1];
-  markerOrientation[2] = euler_marker[2];
-
-  markerPosition[0] = marker.pose.pose.position.x;
-  markerPosition[1] = marker.pose.pose.position.y;
-  markerPosition[2] = marker.pose.pose.position.z;
-
-  getRotationTranslationMatrix(markerTRMatrix, markerOrientation, markerPosition);
-
-  //inertial2marker = inertial2uav * uav2cam * cam2marker * markerTRMatrix;
-  inertial2marker = uav2cam * markerTRMatrix;
-  marker2inertial = inertial2marker.inverse();
-
-  //getAnglesFromRotationTranslationMatrixCOP(marker2inertial, markerOrientation);
-
-  uav_pose.pose.position.x = marker2inertial(0,3);
-  uav_pose.pose.position.y = marker2inertial(1,3);
-  uav_pose.pose.position.z = marker2inertial(2,3);
-
-
-  Eigen::Matrix3d rotation_matrix = marker2inertial.block<3,3>(0,0);
-  Eigen::Quaterniond quaternion(rotation_matrix);
-  uav_pose.pose.orientation.x = quaternion.x();
-  uav_pose.pose.orientation.y = quaternion.y();
-  uav_pose.pose.orientation.z = quaternion.z();
-  uav_pose.pose.orientation.w = quaternion.w();
-
-  */
-  /*
-  tf::Transform marker_cam_frame, marker_imu_frame, uav_imu_frame;
-  marker_cam_frame.setOrigin(tf::Vector3(marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z));
-  marker_cam_frame.setRotation(tf::Quaternion(marker.pose.pose.orientation.x, marker.pose.pose.orientation.y, marker.pose.pose.orientation.z, marker.pose.pose.orientation.w));
-
-  marker_imu_frame = uav_to_cam * marker_cam_frame;
-  uav_imu_frame = marker_imu_frame.inverse();
-
-  uav_pose.pose.position.x = uav_imu_frame.getOrigin().getX();
-  uav_pose.pose.position.y = uav_imu_frame.getOrigin().getY();
-  uav_pose.pose.position.z = uav_imu_frame.getOrigin().getZ();
-
-  uav_pose.pose.orientation.x = uav_imu_frame.getRotation().getX();
-  uav_pose.pose.orientation.y = uav_imu_frame.getRotation().getY();
-  uav_pose.pose.orientation.z = uav_imu_frame.getRotation().getZ();
-  uav_pose.pose.orientation.w = uav_imu_frame.getRotation().getW();
-
-  */
-  // coordinate frame conversion, camera ESD to imu NWU
+  tf::Transform marker_pose_in_camera_frame, uav_pose_imu;
   tf::Quaternion quaternion;
-  tf::Transform marker_pose_world, uav_pose_world;
+  tf::Transform uav_orientation_from_marker, marker_pose_world, uav_pose_world;
+  double roll_imu, pitch_imu, yaw_imu;
+  double roll_marker, pitch_marker, yaw_marker;
 
-  marker_pose_imu.setOrigin(tf::Vector3(-marker.pose.pose.position.y + uav2cam(0,3),
+
+  // coordinate frame conversion, camera ESD to imu NWU
+  marker_pose_in_camera_frame.setOrigin(tf::Vector3(-marker.pose.pose.position.y + uav2cam(0,3),
                                     -marker.pose.pose.position.x  + uav2cam(1,3),
                                     -marker.pose.pose.position.z + uav2cam(2,3)));
-  marker_pose_imu.setRotation(tf::Quaternion(-marker.pose.pose.orientation.y,
+  
+  marker_pose_in_camera_frame.setRotation(tf::Quaternion(-marker.pose.pose.orientation.y,
                                          -marker.pose.pose.orientation.x,
                                          -marker.pose.pose.orientation.z,
                                           marker.pose.pose.orientation.w));
-
-  // set roll and pitch to 0, we should actually set them from imu
   
-
-  tf::Matrix3x3 m(marker_pose_imu.getRotation());
-  double roll, pitch, yaw;
-  m.getRPY(roll, pitch, yaw);
-
   tf::Matrix3x3 m_imu(uav_imu.getRotation());
-  double roll_imu, pitch_imu, yaw_imu;
-  m_imu.getRPY(roll_imu, pitch_imu, yaw_imu) ;
-  //ROS_INFO("Imu roll, pitch, yaw, %.2f, %.2f, %.2f", roll_imu, pitch_imu, yaw_imu);
-  // ignore yaw from imu
-  quaternion.setRPY(roll_imu, pitch_imu, 0);
+  m_imu.getEulerYPR(yaw_imu, pitch_imu, roll_imu) ;
+  m_imu.setEulerYPR(0, pitch_imu, roll_imu);  // discard yaw from imu
+  m_imu.getRotation(quaternion);
   uav_imu.setRotation(quaternion);
 
-  // ignore roll and pitch from marker and set from imu
-  quaternion.setRPY(-roll_imu, -pitch_imu, yaw);
-  marker_pose_imu.setRotation(quaternion);
+  tf::Matrix3x3 m(marker_pose_in_camera_frame.getRotation().inverse());
+  m.getEulerYPR(yaw_marker, pitch_marker, roll_marker);
+  m.setEulerYPR(yaw_marker, pitch_imu, roll_imu);
+  tf::Matrix3x3 m_marker = m.inverse();
+  m_marker.getRotation(quaternion);
+  marker_pose_in_camera_frame.setRotation(quaternion);
+  //m_marker.getEulerYPR(yaw, pitch, roll);
+  //ROS_INFO("Marker roll, pitch, yaw %.2f %.2f %.2f", roll, pitch, yaw);
 
   // transform marker to world frame
-  marker_pose_world = uav_imu * marker_pose_imu;
+  uav_orientation_from_marker.setOrigin(tf::Vector3(0,0,0));
+  uav_orientation_from_marker.setRotation(marker_pose_in_camera_frame.getRotation());
+  uav_orientation_from_marker = uav_orientation_from_marker.inverse();
 
+  marker_pose_world = uav_orientation_from_marker * marker_pose_in_camera_frame;
   uav_pose_world = marker_pose_world.inverse();
 
   uav_pose.pose.position.x = uav_pose_world.getOrigin().getX();
