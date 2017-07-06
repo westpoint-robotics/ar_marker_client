@@ -51,6 +51,8 @@ MultiMarkerTracker::MultiMarkerTracker() {
     uav_imu.setOrigin(tf::Vector3(0,0,0));
     uav_imu.setRotation(tf::Quaternion(0,0,0,1));
 
+    imu_array_index = 0;
+    imu_array_size = 10;
 
 }
 
@@ -213,11 +215,21 @@ void MultiMarkerTracker::imuCallback(const sensor_msgs::Imu &msg)
   getRotationTranslationMatrix(inertial2uav, eulerGlobalFrame, positionGlobalFrame);
   */
 
+  if (imu_array.size() < imu_array_size) {
+    imu_array.push_back(msg);
+  }
+  else {
+    imu_array[imu_array_index] = msg;
+  }
+
+  imu_array_index = (imu_array_index + 1) % imu_array_size;
+
   uav_imu.setRotation(tf::Quaternion(msg.orientation.x,
                                      msg.orientation.y,
                                      msg.orientation.z,
                                      msg.orientation.w));
 }
+
 
 void MultiMarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
@@ -386,7 +398,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
      if (isValidMarkerId(marker.id)) {
         //ROS_INFO("Detected marker id %d", marker.id);
 
-      // correct quaternion info
+      // correct quaternion data
       dummy = marker.pose.pose.orientation.x;
       marker.pose.pose.orientation.x = -marker.pose.pose.orientation.w;
       marker.pose.pose.orientation.w = dummy;
@@ -402,42 +414,21 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
           pose_msg.pose.position.y = marker.pose.pose.position.y;
           pose_msg.pose.position.z = marker.pose.pose.position.z;
 
-         /*
-          pose_msg.pose.orientation.x = marker.pose.pose.orientation.x;
-          pose_msg.pose.orientation.y = marker.pose.pose.orientation.y;
-          pose_msg.pose.orientation.z = marker.pose.pose.orientation.z;
-          pose_msg.pose.orientation.w = marker.pose.pose.orientation.w;
-          */
-          /*
-          double q_marker[4], euler_marker[3];
-
-          q_marker[1] = marker.pose.pose.orientation.x;
-          q_marker[2] = marker.pose.pose.orientation.y;
-          q_marker[3] = marker.pose.pose.orientation.z;
-          q_marker[0] = marker.pose.pose.orientation.w;
-
-          quaternion2euler(q_marker, euler_marker);
-
-          pose_msg.pose.orientation.x = euler_marker[0];
-          pose_msg.pose.orientation.y = euler_marker[1];
-          pose_msg.pose.orientation.z = euler_marker[2];
-          pose_msg.pose.orientation.w = 0;
-          */
-
           pose_msg.pose.orientation.x = marker.pose.pose.orientation.x;
           pose_msg.pose.orientation.y = marker.pose.pose.orientation.y;
           pose_msg.pose.orientation.z = marker.pose.pose.orientation.z;
           pose_msg.pose.orientation.w = marker.pose.pose.orientation.w;
 
-
-          pose_msg.header.stamp = ros::Time::now();
+          pose_msg.header.stamp = marker.header.stamp;
           pub_marker0.publish(pose_msg);
 
       }
 
 
-      // median filter
-      
+      // median like filter
+      // instead of ordinary median we use filtering base on average values of last n data
+      // if current measurement is above the average for some threshold, the measurements is discarded
+      // we use marker position z component as filter variable
       MarkerFilterData marker_data;
 
       if (filter_counter.find(marker.id) == filter_counter.end()) {
@@ -457,7 +448,8 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
          //ROS_INFO("Added marker filter data");
       }
       else {
-        // we have collected enough data,look for false positives
+
+        // we have collected enough data
         // before adding new marker data, check for false positive
         // isolate false positives by comparing current marker z position with average z position of previous markers
 
@@ -478,23 +470,13 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
 
                 marker_filter_data[marker.id][filter_counter[marker.id]] = marker_data;
                 filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % MEDFILT_SIZE;
-                // sort data and take middle one
-                //ROS_INFO("Executing medfilt");
-                //std::vector<MarkerFilterData> temp_vector(MEDFILT_SIZE);
-                //ROS_INFO("Copying vectors.");
-                //std::copy(marker_filter_data[marker.id].begin(), marker_filter_data[marker.id].end(), temp_vector.begin());
-                //ROS_INFO("Sorting.");
-                
-
-                // don't do median filter
-                //std::sort(temp_vector.begin(), temp_vector.end(), MarkerComparator);
-                //ROS_INFO("Getting medfilt value");
-                //marker = temp_vector[MEDFILT_SIZE / 2 + 1].marker;
-                //ROS_INFO_STREAM("Choosing marker:   \n" << marker.pose.pose.position.z);
-
 
                 geometry_msgs::PoseStamped uav_pose;
-                uav_pose =  getUavPoseFromMarker(marker);
+
+                // synchronize the imu and marker data
+                tf::Transform imu_tf = getSynchronizedImuTransform(marker.header.stamp);
+
+                uav_pose =  getUavPoseFromMarker(marker, imu_tf);
                 marker_detected[marker.id] = true;
                 marker_detected_counter[marker.id]++;
                 //ROS_INFO("Corrected position marker id %d, %.2f, %.2f, %.2f", marker.id, marker.pose.pose.position.x, marker.pose.pose.position.y, marker.pose.pose.position.z);
@@ -530,7 +512,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
 
             }
             else {
-              ROS_INFO_STREAM("Detected false positive, ignoring marker: \n" << marker);
+              //ROS_INFO_STREAM("Detected false positive, ignoring marker: \n" << marker);
 
             }        
         }
@@ -561,7 +543,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
 
 }
 
-geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker) {
+geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker,  tf::Transform imu_tf) {
 
   // input ar marker - position of the marker w.r.t the UAV camera
   // output pose stamped - position of the UAV w.r.t. the marker frame
@@ -570,25 +552,26 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   tf::Transform marker_pose_in_camera_frame, uav_pose_imu;
   tf::Quaternion quaternion;
   tf::Transform uav_orientation_from_marker, marker_pose_world, uav_pose_world;
+
   double roll_imu, pitch_imu, yaw_imu;
   double roll_marker, pitch_marker, yaw_marker;
 
 
   // coordinate frame conversion, camera ESD to imu NWU
-  marker_pose_in_camera_frame.setOrigin(tf::Vector3(-marker.pose.pose.position.y + uav2cam(0,3),
-                                    -marker.pose.pose.position.x  + uav2cam(1,3),
-                                    -marker.pose.pose.position.z + uav2cam(2,3)));
+  marker_pose_in_camera_frame.setOrigin(tf::Vector3((-marker.pose.pose.position.y + uav2cam(0,3) * uav2cam(3,3)),
+                                    (-marker.pose.pose.position.x  + uav2cam(1,3) * uav2cam(3,3)),
+                                    (-marker.pose.pose.position.z + uav2cam(2,3)) * uav2cam(3,3)));
   
   marker_pose_in_camera_frame.setRotation(tf::Quaternion(-marker.pose.pose.orientation.y,
                                          -marker.pose.pose.orientation.x,
                                          -marker.pose.pose.orientation.z,
                                           marker.pose.pose.orientation.w));
   
-  tf::Matrix3x3 m_imu(uav_imu.getRotation());
+  tf::Matrix3x3 m_imu(imu_tf.getRotation());
   m_imu.getEulerYPR(yaw_imu, pitch_imu, roll_imu) ;
   m_imu.setEulerYPR(0, pitch_imu, roll_imu);  // discard yaw from imu
   m_imu.getRotation(quaternion);
-  uav_imu.setRotation(quaternion);
+  imu_tf.setRotation(quaternion);
 
   tf::Matrix3x3 m(marker_pose_in_camera_frame.getRotation().inverse());
   m.getEulerYPR(yaw_marker, pitch_marker, roll_marker);
@@ -744,7 +727,9 @@ void MultiMarkerTracker::addNewFrames() {
                             marker_transform.setOrigin( position);
                             marker_transform.setRotation( rotation);
                             tf_broadcaster.sendTransform(tf::StampedTransform(marker_transform, ros::Time::now(), marker_frames[marker_base_frames[marker_ids[i]]].c_str(), marker_frames[marker_ids[i]].c_str()));
-
+                            //marker_transform.setOrigin(tf::Vector3(marker_transform.getOrigin().getX(),
+                            //                                      marker_transform.getOrigin().getY(),
+                            //                                      0.0))
                             marker_transform_stamped[marker_ids[i]].setData(marker_transform);
                             marker_transform_stamped[marker_ids[i]].frame_id_ =  marker_frames[marker_base_frames[marker_ids[i]]].c_str();
                             marker_transform_stamped[marker_ids[i]].child_frame_id_ = marker_frames[marker_ids[i]].c_str();
@@ -941,3 +926,48 @@ void MultiMarkerTracker::publishStaticTransformsBetweenMarkers() {
       }
   }
 }
+
+tf::Transform MultiMarkerTracker::getSynchronizedImuTransform(ros::Time stamp) {
+    int current_array_index;
+    int array_counter = 0;
+    int sync_imu_index;
+    int start_imu_index;
+    double stamp_diff, min_stamp_diff = std::numeric_limits<double>::infinity();
+    tf::Transform imu_tf;
+    
+    current_array_index = imu_array_index - 1; // newest imu data
+    start_imu_index = current_array_index;
+    
+    if (current_array_index < 0 )
+      current_array_index - imu_array_size - 1;
+    
+    while (true) { 
+
+      stamp_diff = fabs(imu_array[current_array_index].header.stamp.toSec() 
+               - stamp.toSec()); 
+
+      //ROS_INFO("Index %d time diff %.5f", current_array_index, stamp_diff);
+      if (stamp_diff < min_stamp_diff) {
+          min_stamp_diff = stamp_diff;
+          sync_imu_index = current_array_index;
+      }
+      current_array_index = current_array_index - 1; // newest imu data
+      
+      if (current_array_index < 0 )
+        current_array_index = imu_array_size - 1;
+      
+      array_counter++;
+      if (array_counter == imu_array_size)
+        break;
+    }
+
+    imu_tf.setOrigin(tf::Vector3(0,0,0));
+    imu_tf.setRotation(tf::Quaternion(imu_array[sync_imu_index].orientation.x,
+                                      imu_array[sync_imu_index].orientation.y,
+                                      imu_array[sync_imu_index].orientation.z,
+                                      imu_array[sync_imu_index].orientation.w));
+
+    //ROS_INFO("Min stamp diff        %.5f  index           %d start index     %d", min_stamp_diff, sync_imu_index, start_imu_index);
+    return imu_tf;
+}
+

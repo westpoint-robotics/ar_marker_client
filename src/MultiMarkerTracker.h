@@ -68,7 +68,7 @@ public:
     bool allMarkerFramesAdded();
     int getBaseMarker();
     void extractMarkers(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
-    geometry_msgs::PoseStamped getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker);
+    geometry_msgs::PoseStamped getUavPoseFromMarker(ar_track_alvar_msgs::AlvarMarker marker, tf::Transform imu_tf);
     void addNewFrames();
     void estimateUavPoseFromMarkers();
     void publishStaticTransformsBetweenMarkers();
@@ -97,6 +97,10 @@ public:
     void eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix, double roll, double pitch, double yaw);
     void rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix, double &roll, double &pitch, double &yaw);
     void matrixTFToEigen(const tf::Matrix3x3 &t, Eigen::Matrix3d &e);
+    tf::Transform getSynchronizedImuTransform(ros::Time stamp);
+
+
+
 
     int first_meas;
     //int usv_id;
@@ -150,6 +154,10 @@ public:
     std::map<int, std::vector<MarkerFilterData> > marker_filter_data;
     std::map<int, int> filter_counter;
     std::map<int, bool> filter_data_ready;
+
+    std::vector<sensor_msgs::Imu> imu_array;
+    int imu_array_index;
+    int imu_array_size;
 
 
 
