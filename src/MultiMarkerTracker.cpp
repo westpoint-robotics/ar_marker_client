@@ -586,6 +586,11 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   uav_orientation_from_marker.setOrigin(tf::Vector3(0,0,0));
   uav_orientation_from_marker.setRotation(marker_pose_in_camera_frame.getRotation());
   uav_orientation_from_marker = uav_orientation_from_marker.inverse();
+  tf::Matrix3x3 m2(uav_orientation_from_marker.getRotation());
+  m2.getEulerYPR(yaw_marker, pitch_marker, roll_marker);
+  m2.setEulerYPR(0, pitch_marker, roll_marker);
+  m2.getRotation(quaternion);
+  uav_orientation_from_marker.setRotation(quaternion);
 
   marker_pose_world = uav_orientation_from_marker * marker_pose_in_camera_frame;
   uav_pose_world = marker_pose_world.inverse();
