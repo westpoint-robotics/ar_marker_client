@@ -6,3 +6,7 @@ Install [ar_track_alvar](http://wiki.ros.org/ar_track_alvar) package which is us
 ```
 $ sudo apt-get install ros-kinetic-ar-track-alvar
 ```
+In addition, install yaml-cpp library:
+```
+$ sudo apt-get install libyaml-cpp-dev
+```
