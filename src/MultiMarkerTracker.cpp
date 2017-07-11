@@ -34,9 +34,9 @@ MultiMarkerTracker::MultiMarkerTracker() {
     rate_filt_max_velocity = 5;  // m/s
     rate_filt_max_delta_time = 0.1;
     alignedFlag = false;
-    newSoftData = false;
+    newOptitrackData = false;
     newBaseMarkerData = false;
-    use_soft = false;
+    use_optitrack_align = false;
     marker_transform_samples_num = 20;
 
     uav_to_cam.setOrigin(tf::Vector3(uav2cam(0,3), uav2cam(1,3), uav2cam(2,3)));
@@ -235,7 +235,7 @@ void MultiMarkerTracker::odometryCallback(const nav_msgs::Odometry &msg)
 {
 }
 
-void MultiMarkerTracker::softCallback(const geometry_msgs::PoseStamped &msg)
+void MultiMarkerTracker::optitrackCallback(const geometry_msgs::TransformStamped &msg)
 {
   //double soft_q[4], soft_euler[3];
 
@@ -243,12 +243,12 @@ void MultiMarkerTracker::softCallback(const geometry_msgs::PoseStamped &msg)
 
   //quaternion2euler(soft_q, soft_euler);
 
-  softData = msg;
-  newSoftData = true;
+  optitrackData = msg;
+  newOptitrackData = true;
   //soft_yaw = soft_euler[2];
 }
 
-bool MultiMarkerTracker::isAlignedMarkerWithSoft()
+bool MultiMarkerTracker::isAlignedMarkerWithOptitrack()
 {
   return alignedFlag;
 }
@@ -266,14 +266,18 @@ void MultiMarkerTracker::setPubTargetPose_f(ros::Publisher pubTargetPose_f) {
     pub_target_pose_f = pubTargetPose_f;
 }
 
+void MultiMarkerTracker::setPubTargetTransform(ros::Publisher publisher) {
+    pub_target_transform = publisher;
+}
+
 void MultiMarkerTracker::setPubDetectionFlag(ros::Publisher fPub)
 {
     pubDetectionFlag = fPub;
 }
 
 
-void MultiMarkerTracker::setMarkerOffset(tf::Transform softToMarker) {
-    this->softToMarker = softToMarker;
+void MultiMarkerTracker::setOptitrackToMarkerTransform(tf::Transform optitrackToMarker) {
+    this->optitrackToMarker = optitrackToMarker;
 }
 
 void MultiMarkerTracker::setMarkerIds(std::vector<int> marker_ids) {
@@ -354,8 +358,8 @@ void MultiMarkerTracker::initUavPosePublishers(ros::NodeHandle &nh) {
   ROS_INFO("Initialized pose publishers");
 }
 
-void MultiMarkerTracker::setUseSoftFlag(bool flag) {
-  use_soft = flag;
+void MultiMarkerTracker::setUseOptitrackFlag(bool flag) {
+  use_optitrack_align = flag;
 }
 
 void MultiMarkerTracker::setMarkerTransformSampleNum(int samples_num) {
@@ -584,7 +588,7 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
                                          -marker_pose_in_camera_end_frame.getRotation().getX(),
                                          -marker_pose_in_camera_end_frame.getRotation().getZ(),
                                           marker_pose_in_camera_end_frame.getRotation().getW()));
-  
+  // remove yaw angle from imu orientation
   tf::Matrix3x3 m_imu(imu_tf.getRotation());
   m_imu.getEulerYPR(yaw_imu, pitch_imu, roll_imu) ;
   m_imu.setEulerYPR(0, pitch_imu, roll_imu);  // discard yaw from imu
@@ -593,10 +597,12 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
 
   //ROS_INFO("Imu roll, pitch, yaw %.2f %.2f %.2f", roll_imu, pitch_imu, yaw_imu);
 
-
+  // remove roll and pitch from marker orientation and set the imu angles
   tf::Matrix3x3 m(marker_pose_in_camera_nwu_frame.getRotation().inverse());
   m.getEulerYPR(yaw_marker, pitch_marker, roll_marker);
   m.setEulerYPR(yaw_marker, pitch_imu, roll_imu);
+  
+  // set marker pose in camera nwu frame with imu roll and pitch angles
   tf::Matrix3x3 m_marker = m.inverse();
   m_marker.getRotation(quaternion);
   marker_pose_in_camera_nwu_frame.setRotation(quaternion);
@@ -619,6 +625,12 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   uav_pose.pose.position.x = uav_pose_world.getOrigin().getX();
   uav_pose.pose.position.y = uav_pose_world.getOrigin().getY();
   uav_pose.pose.position.z = uav_pose_world.getOrigin().getZ();
+
+  // this is a hack - set roll pitch from imu and yaw from marker
+  // we should get the same result through previous transformations
+
+  m.getRotation(quaternion);
+  uav_pose_world.setRotation(quaternion);
 
   uav_pose.pose.orientation.x = uav_pose_world.getRotation().getX();
   uav_pose.pose.orientation.y = uav_pose_world.getRotation().getY();
@@ -791,6 +803,7 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
   uav_position_filtered.point.z = 0;
   int markers_detected = 0;
   int filtered_markers_detected = 0;
+  tf::Quaternion quaternion;
 
   for(int i = 0; i < marker_ids.size(); i++) {
 
@@ -811,9 +824,9 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
 
             uav_to_base_marker_tf = marker_to_base_marker_tf * uav_to_marker_transform;
 
-            if (use_soft && isAlignedMarkerWithSoft()) {
+            if (use_optitrack_align && isAlignedMarkerWithOptitrack()) {
 
-              uav_to_base_marker_tf = softToMarker * uav_to_base_marker_tf;
+              uav_to_base_marker_tf = optitrackToMarker * uav_to_base_marker_tf;
 
               /*
               uav_pose.pose.position.x += markerOffset[0];
@@ -840,44 +853,17 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
 
             uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
             uav_position_filtered.header.frame_id = "world";
-            markers_detected++;
 
-            // rate filter
-            /*
-            if (first_meas == 0) {
-                uav_position_filtered_old.point.x = uav_pose[marker_ids[i]].pose.position.x;
-                uav_position_filtered_old.point.y = uav_pose[marker_ids[i]].pose.position.y;
-                uav_position_filtered_old.point.z = uav_pose[marker_ids[i]].pose.position.z;
-                uav_position_filtered_old.header.stamp = uav_pose[marker_ids[i]].header.stamp;
-                first_meas = 1;
+            if (markers_detected == 0) {
+              // first marker detected
+              quaternion = uav_to_base_marker_tf.getRotation();
             }
             else {
+              quaternion.slerp(uav_to_base_marker_tf.getRotation(), 1 / (markers_detected + 1));
+            }   
 
-                double dt = (uav_pose[marker_ids[i]].header.stamp.toSec() - uav_position_filtered_old.header.stamp.toSec());
-                // do the filtering only if get continuous markers
-                //if (dt < rate_filt_max_delta_time) {
-                double max_dl = dt * rate_filt_max_velocity;
-                if ((fabs( uav_pose[marker_ids[i]].pose.position.x - uav_position_filtered_old.point.x) < max_dl) &&
-                    (fabs( uav_pose[marker_ids[i]].pose.position.y - uav_position_filtered_old.point.y) < max_dl) &&
-                    (fabs( uav_pose[marker_ids[i]].pose.position.z - uav_position_filtered_old.point.z) < max_dl)) {
-                    // valid marker
-                    uav_position_filtered.point.x += uav_pose[marker_ids[i]].pose.position.x;
-                    uav_position_filtered.point.y += uav_pose[marker_ids[i]].pose.position.y;
-                    uav_position_filtered.point.z += uav_pose[marker_ids[i]].pose.position.z;
-                    uav_position_filtered.header.stamp = uav_pose[marker_ids[i]].header.stamp;
-                    uav_position_filtered.header.frame_id = "world";
-                    filtered_markers_detected++;
-
-                }
-                else {
-                    //ROS_INFO("Ignoring measurement from marker %d", marker_ids[i]);
-                }
-
-            }*/
+            markers_detected++;
           
-
-
-
           }
           catch (tf::TransformException &ex) {
              ROS_ERROR("%s",ex.what());
@@ -895,23 +881,38 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position.point.y = uav_position.point.y / markers_detected;
     uav_position.point.z = uav_position.point.z / markers_detected;
 
+    // median filter
 
-    // implement pt1 filter;
+
+    // pt1 filter;
     uav_position_filtered.point.x = (1 - filt_const) * uav_position.point.x + filt_const * uav_position_filtered_old.point.x;
     uav_position_filtered.point.y = (1 - filt_const) * uav_position.point.y + filt_const * uav_position_filtered_old.point.y;
     uav_position_filtered.point.z = (1 - filt_const) * uav_position.point.z + filt_const * uav_position_filtered_old.point.z;
 
     uav_position_filtered_old = uav_position_filtered;
 
-    if (use_soft) {
-      if (isAlignedMarkerWithSoft()) {
+    geometry_msgs::TransformStamped pose_tf;
+    pose_tf.header.stamp = uav_position.header.stamp;
+    pose_tf.transform.translation.x = uav_position_filtered.point.x;
+    pose_tf.transform.translation.y = uav_position_filtered.point.y;
+    pose_tf.transform.translation.z = uav_position_filtered.point.z;
+
+    pose_tf.transform.rotation.x = quaternion.getX();
+    pose_tf.transform.rotation.y = quaternion.getY();
+    pose_tf.transform.rotation.z = quaternion.getZ();
+    pose_tf.transform.rotation.w = quaternion.getW();
+
+    if (use_optitrack_align) {
+      if (isAlignedMarkerWithOptitrack()) {
         pub_target_pose.publish(uav_position);
         pub_target_pose_f.publish(uav_position_filtered);
+        pub_target_transform.publish(pose_tf);
       }
     }
     else {
         pub_target_pose.publish(uav_position);
         pub_target_pose_f.publish(uav_position_filtered);
+        pub_target_transform.publish(pose_tf);
     }
 
 
@@ -929,8 +930,8 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position_filtered.point.y = (1 - filt_const) * uav_position_filtered.point.y + filt_const * uav_position_filtered_old.point.y;
     uav_position_filtered.point.z = (1 - filt_const) * uav_position_filtered.point.z + filt_const * uav_position_filtered_old.point.z;
 
-    if (use_soft) {
-      if (isAlignedMarkerWithSoft()) {
+    if (use_optitrack_align) {
+      if (isAlignedMarkerWithOptitrack()) {
          pub_target_pose_f.publish(uav_position_filtered);
       }
     }
