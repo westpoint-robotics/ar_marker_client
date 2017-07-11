@@ -588,7 +588,7 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
                                          -marker_pose_in_camera_end_frame.getRotation().getX(),
                                          -marker_pose_in_camera_end_frame.getRotation().getZ(),
                                           marker_pose_in_camera_end_frame.getRotation().getW()));
-  
+  // remove yaw angle from imu orientation
   tf::Matrix3x3 m_imu(imu_tf.getRotation());
   m_imu.getEulerYPR(yaw_imu, pitch_imu, roll_imu) ;
   m_imu.setEulerYPR(0, pitch_imu, roll_imu);  // discard yaw from imu
@@ -597,10 +597,12 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
 
   //ROS_INFO("Imu roll, pitch, yaw %.2f %.2f %.2f", roll_imu, pitch_imu, yaw_imu);
 
-
+  // remove roll and pitch from marker orientation and set the imu angles
   tf::Matrix3x3 m(marker_pose_in_camera_nwu_frame.getRotation().inverse());
   m.getEulerYPR(yaw_marker, pitch_marker, roll_marker);
   m.setEulerYPR(yaw_marker, pitch_imu, roll_imu);
+  
+  // set marker pose in camera nwu frame with imu roll and pitch angles
   tf::Matrix3x3 m_marker = m.inverse();
   m_marker.getRotation(quaternion);
   marker_pose_in_camera_nwu_frame.setRotation(quaternion);
@@ -623,6 +625,12 @@ geometry_msgs::PoseStamped MultiMarkerTracker::getUavPoseFromMarker(ar_track_alv
   uav_pose.pose.position.x = uav_pose_world.getOrigin().getX();
   uav_pose.pose.position.y = uav_pose_world.getOrigin().getY();
   uav_pose.pose.position.z = uav_pose_world.getOrigin().getZ();
+
+  // this is a hack - set roll pitch from imu and yaw from marker
+  // we should get the same result through previous transformations
+
+  m.getRotation(quaternion);
+  uav_pose_world.setRotation(quaternion);
 
   uav_pose.pose.orientation.x = uav_pose_world.getRotation().getX();
   uav_pose.pose.orientation.y = uav_pose_world.getRotation().getY();
