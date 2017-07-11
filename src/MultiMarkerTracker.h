@@ -56,7 +56,7 @@ public:
     void ar_track_alvar_sub(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void odometryCallback(const nav_msgs::Odometry &msg);
     void imuCallback(const sensor_msgs::Imu &msg);
-    void softCallback(const geometry_msgs::PoseStamped &msg);
+    void optitrackCallback(const geometry_msgs::TransformStamped &msg);
     void quaternion2euler(double *quaternion, double *euler);
     void getRotationTranslationMatrix(Eigen::Matrix4d &rotationTranslationMatrix,
     	double *orientationEuler, double *position);
@@ -74,12 +74,12 @@ public:
     void estimateUavPoseFromMarkers();
     void publishStaticTransformsBetweenMarkers();
     void initUavPosePublishers(ros::NodeHandle &nh);
-    bool isAlignedMarkerWithSoft();
+    bool isAlignedMarkerWithOptitrack();
     void setAlignedFlag(bool flag);
-    void setUseSoftFlag(bool flag);
+    void setUseOptitrackFlag(bool flag);
     void setFilterConst(double filter_const);
     void setMarkerTransformSampleNum(int samples_num);
-    bool newSoftData;
+    bool newOptitrackData;
     bool newBaseMarkerData;
 
     //dynamic_reconfigure::Server<marker_tracker::MarkerOffsetConfig>::CallbackType params_call;
@@ -88,7 +88,7 @@ public:
     void setPubTargetPose_f(ros::Publisher pubTargetPose_f);
     void setPubTargetTransform(ros::Publisher pub_target_transform);
     void setPubDetectionFlag(ros::Publisher fPub);
-    void setMarkerOffset(tf::Transform softToMarker);
+    void setOptitrackToMarkerTransform(tf::Transform optitrackToMarker);
     void setMarkerIds(std::vector<int> marker_ids);
     void setCameraFrame(std::string camera_frame);
     void setPubMarker0(ros::Publisher pub);
@@ -147,12 +147,12 @@ public:
     std::string camera_frame;
     tf::TransformBroadcaster tf_broadcaster;
     tf::TransformListener tf_listener;
-    geometry_msgs::PoseStamped softData;
-    tf::Transform softToMarker;
+    geometry_msgs::TransformStamped optitrackData;
+    tf::Transform optitrackToMarker;
     tf::Transform uav_to_cam;
     tf::Transform uav_imu;
     bool alignedFlag;
-    bool use_soft;
+    bool use_optitrack_align;
 
     std::map<int, std::vector<MarkerFilterData> > marker_filter_data;
     std::map<int, int> filter_counter;
