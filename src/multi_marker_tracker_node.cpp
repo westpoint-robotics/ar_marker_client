@@ -73,6 +73,7 @@ int main(int argc, char **argv)
   //ros::Publisher pub_usv_pose = n.advertise<geometry_msgs::Pose>("usv_pose", 10);
   ros::Publisher pub_target_pose = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose", 1);
   ros::Publisher pub_target_pose_f = n.advertise<geometry_msgs::PointStamped>("ar_tracker/pose_f", 1);
+  ros::Publisher pub_target_transform = n.advertise<geometry_msgs::TransformStamped>("ar_tracker/pose_tf", 1);
   ros::Publisher pub_marker0 = n.advertise<geometry_msgs::PoseStamped>("ar_tracker/marker0", 1);
   ros::Publisher pubDetectionFlag = n.advertise<std_msgs::Int16>("ar_tracker/detection_flag", 1);
 
@@ -82,6 +83,7 @@ int main(int argc, char **argv)
   mtracker->setMarkerIds(marker_ids);
   mtracker->setPubTargetPose(pub_target_pose);
   mtracker->setPubTargetPose_f(pub_target_pose_f);
+  mtracker->setPubTargetTransform(pub_target_transform);
   mtracker->setPubMarker0(pub_marker0);
   mtracker->setPubDetectionFlag(pubDetectionFlag);
   mtracker->setCameraFrame(camera_frame);

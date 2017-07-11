@@ -14,6 +14,7 @@
 #include <nav_msgs/Odometry.h>
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/TransformStamped.h"
 #include "std_msgs/Int16.h"
 #include <eigen3/Eigen/Eigen>
 #include <dynamic_reconfigure/server.h>
@@ -85,6 +86,7 @@ public:
 
     void setPubTargetPose(ros::Publisher pubTargetPose);
     void setPubTargetPose_f(ros::Publisher pubTargetPose_f);
+    void setPubTargetTransform(ros::Publisher pub_target_transform);
     void setPubDetectionFlag(ros::Publisher fPub);
     void setMarkerOffset(tf::Transform softToMarker);
     void setMarkerIds(std::vector<int> marker_ids);
@@ -136,6 +138,7 @@ public:
     Eigen::Matrix4d cam2marker, marker2inertial;
     ros::Publisher pub_target_pose, pubDetectionFlag;
     ros::Publisher pub_target_pose_f;
+    ros::Publisher pub_target_transform;
     ros::Publisher pub_marker0;
     std::map<int,ros::Publisher> uav_pose_publishers;
     std::map<int,ros::Publisher> uav_relative_pose_publishers;
