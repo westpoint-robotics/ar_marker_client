@@ -95,6 +95,7 @@ public:
     void setRateFiltVelocity(double velocity);
     void setRateFiltTime(double time);
     void setMinMarkerDetection(int detection_number);
+    void setAverageFilterParameters(int filter_size, double filter_threshold);
 
     void eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix, double roll, double pitch, double yaw);
     void rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix, double &roll, double &pitch, double &yaw);
@@ -113,6 +114,8 @@ public:
     double markerPositionOld[3];
     double markerOffset[3];
     double filt_const;
+    int average_filter_size;
+    double average_filter_threshold;
     double rate_filt_max_velocity;
     double rate_filt_max_delta_time;
     geometry_msgs::PointStamped uav_position;

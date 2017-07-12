@@ -22,6 +22,8 @@ int main(int argc, char **argv)
   double mean_x = 0, mean_y = 0, mean_z = 0;
   double diff_x = 0, diff_y = 0, diff_z = 0;
   double filt_const;
+  double average_filter_threshold = 1.0;
+  int average_filter_size = 5;
   std::string odometry_callback, cam2imuTf;
   std::string camera_frame;  // todo, add as a param
   std::vector<int> marker_ids;
@@ -49,6 +51,9 @@ int main(int argc, char **argv)
   private_node_handle_.param("optitrack_data_vector_length", filter_length, int(100));
   private_node_handle_.param("use_optitrack_align", use_optitrack_align, false);
   private_node_handle_.param("filter_const", filt_const, 0.9);
+  private_node_handle_.param("average_filter_size", average_filter_size, 5);
+  private_node_handle_.param("average_filter_threshold", average_filter_threshold, 1.0);
+
 
 
   ROS_INFO("Number of marker ids %d", (int)marker_ids.size());
@@ -58,6 +63,7 @@ int main(int argc, char **argv)
   }
 
   ROS_INFO("Parameters, %s, %s, %.2f, %.2f,  %d ", cam2imuTf.c_str(), camera_frame.c_str(), rate_filt_velocity, rate_filt_time, min_marker_detection);
+  ROS_INFO("Average filter parameters, %d, %.2f", average_filter_size, average_filter_threshold);
 
   //std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
 
@@ -93,6 +99,7 @@ int main(int argc, char **argv)
   mtracker->setUseOptitrackFlag(use_optitrack_align);
   mtracker->setFilterConst(filt_const);
   mtracker->setMarkerTransformSampleNum(transform_sample_num);
+  mtracker->setAverageFilterParameters(average_filter_size, average_filter_threshold);
   ROS_INFO("Initializing publisher.");
   mtracker->initUavPosePublishers(n);
 
