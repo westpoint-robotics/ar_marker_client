@@ -39,6 +39,9 @@ MultiMarkerTracker::MultiMarkerTracker() {
     use_optitrack_align = false;
     marker_transform_samples_num = 20;
 
+    average_filter_size = 5;
+    average_filter_threshold = 1.0f;
+
     uav_to_cam.setOrigin(tf::Vector3(uav2cam(0,3), uav2cam(1,3), uav2cam(2,3)));
     tf::Matrix3x3 tf3d;
     tf3d.setValue(uav2cam(0,0), uav2cam(0,1), uav2cam(0,2),
@@ -317,6 +320,11 @@ void MultiMarkerTracker::setFilterConst(double filter_const) {
    this->filt_const = filter_const;
 }
 
+void MultiMarkerTracker::setAverageFilterParameters(int array_size, double filter_threshold) {
+   this->average_filter_size = array_size;
+   this->average_filter_threshold = filter_threshold;
+}
+
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
   //return (std::find(marker_ids.begin(), marker_ids.end(), marker_id) != marker_ids.end());
   for(int i=0; i < marker_ids.size(); i++) {
@@ -463,17 +471,17 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
 
         while (true) {
           average_z += marker_filter_data[marker.id][index].marker.pose.pose.position.z;
-          index = (index + 1 ) % MEDFILT_SIZE;
+          index = (index + 1 ) % average_filter_size;
           counter++;
           if (index == filter_counter[marker.id])
             break;
         }
         if (counter > 0) {
             average_z /= counter;
-            if (fabs(marker_data.marker.pose.pose.position.z - average_z) < 1.0f) {
+            if (fabs(marker_data.marker.pose.pose.position.z - average_z) < average_filter_threshold) {
 
                 marker_filter_data[marker.id][filter_counter[marker.id]] = marker_data;
-                filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % MEDFILT_SIZE;
+                filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % average_filter_size;
 
                 geometry_msgs::PoseStamped uav_pose;
 
@@ -882,6 +890,8 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position.point.z = uav_position.point.z / markers_detected;
 
     // median filter
+
+
 
 
     // pt1 filter;
