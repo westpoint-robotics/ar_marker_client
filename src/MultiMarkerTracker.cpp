@@ -896,6 +896,7 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position.point.z = uav_position.point.z / markers_detected;
 
     // median filter
+    /*
     PoseFilterData pose_data;
 
     pose_data.pose.pose.position.x = uav_position.point.x;
@@ -920,68 +921,41 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
         std::vector<PoseFilterData> sort_array = pose_filter_array;
         std::sort(sort_array.begin(), sort_array.end(), PoseComparator);
         pose_data = sort_array[(pose_filter_size / 2) + 1];
-
-
-        // pt1 filter;
-        uav_position_filtered.point.x = (1 - filt_const) * pose_data.pose.pose.position.x + filt_const * uav_position_filtered_old.point.x;
-        uav_position_filtered.point.y = (1 - filt_const) * pose_data.pose.pose.position.y + filt_const * uav_position_filtered_old.point.y;
-        uav_position_filtered.point.z = (1 - filt_const) * pose_data.pose.pose.position.z + filt_const * uav_position_filtered_old.point.z;
-
-        uav_position_filtered_old = uav_position_filtered;
-
-        geometry_msgs::TransformStamped pose_tf;
-        pose_tf.header.stamp = uav_position.header.stamp;
-        pose_tf.transform.translation.x = uav_position_filtered.point.x;
-        pose_tf.transform.translation.y = uav_position_filtered.point.y;
-        pose_tf.transform.translation.z = uav_position_filtered.point.z;
-
-        pose_tf.transform.rotation.x = pose_data.pose.pose.orientation.x;
-        pose_tf.transform.rotation.y = pose_data.pose.pose.orientation.y;
-        pose_tf.transform.rotation.z = pose_data.pose.pose.orientation.z;
-        pose_tf.transform.rotation.w = pose_data.pose.pose.orientation.w;;
-
-        if (use_optitrack_align) {
-          if (isAlignedMarkerWithOptitrack()) {
-            pub_target_pose.publish(uav_position);
-            pub_target_pose_f.publish(uav_position_filtered);
-            pub_target_transform.publish(pose_tf);
-          }
-        }
-        else {
-            pub_target_pose.publish(uav_position);
-            pub_target_pose_f.publish(uav_position_filtered);
-            pub_target_transform.publish(pose_tf);
-        }
-
-
-
     }
-  }
+  }*/
 
-  //ROS_INFO("Markers %d, filtered markers %d", markers_detected, filtered_markers_detected);
-  /*
-  if (filtered_markers_detected > 0) {
-    uav_position_filtered.point.x = uav_position_filtered.point.x / filtered_markers_detected;
-    uav_position_filtered.point.y = uav_position_filtered.point.y / filtered_markers_detected;
-    uav_position_filtered.point.z = uav_position_filtered.point.z / filtered_markers_detected;
 
-    // implement pt1 filter;
-    uav_position_filtered.point.x = (1 - filt_const) * uav_position_filtered.point.x + filt_const * uav_position_filtered_old.point.x;
-    uav_position_filtered.point.y = (1 - filt_const) * uav_position_filtered.point.y + filt_const * uav_position_filtered_old.point.y;
-    uav_position_filtered.point.z = (1 - filt_const) * uav_position_filtered.point.z + filt_const * uav_position_filtered_old.point.z;
+    // pt1 filter;
+    uav_position_filtered.point.x = (1 - filt_const) * uav_position.point.x + filt_const * uav_position_filtered_old.point.x;
+    uav_position_filtered.point.y = (1 - filt_const) * uav_position.point.y + filt_const * uav_position_filtered_old.point.y;
+    uav_position_filtered.point.z = (1 - filt_const) * uav_position.point.z + filt_const * uav_position_filtered_old.point.z;
+
+    uav_position_filtered_old = uav_position_filtered;
+
+    geometry_msgs::TransformStamped pose_tf;
+    pose_tf.header.stamp = uav_position.header.stamp;
+    pose_tf.transform.translation.x = uav_position_filtered.point.x;
+    pose_tf.transform.translation.y = uav_position_filtered.point.y;
+    pose_tf.transform.translation.z = uav_position_filtered.point.z;
+
+    pose_tf.transform.rotation.x = quaternion.getX();
+    pose_tf.transform.rotation.y = quaternion.getY();
+    pose_tf.transform.rotation.z = quaternion.getZ();
+    pose_tf.transform.rotation.w = quaternion.getW();
 
     if (use_optitrack_align) {
       if (isAlignedMarkerWithOptitrack()) {
-         pub_target_pose_f.publish(uav_position_filtered);
+        pub_target_pose.publish(uav_position);
+        pub_target_pose_f.publish(uav_position_filtered);
+        pub_target_transform.publish(pose_tf);
       }
     }
     else {
+        pub_target_pose.publish(uav_position);
         pub_target_pose_f.publish(uav_position_filtered);
+        pub_target_transform.publish(pose_tf);
     }
-    uav_position_filtered_old = uav_position_filtered;
-
   }
-  */
 }
 
 void MultiMarkerTracker::publishStaticTransformsBetweenMarkers() {
