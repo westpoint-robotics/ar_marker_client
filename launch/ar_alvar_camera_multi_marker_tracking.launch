@@ -24,5 +24,9 @@
         <remap from="vrpn_client_node/marker/pose" to="/vrpn_client_node/marker/pose"/>
     </node>
 
+    <include file="$(find msf_updates)/launch/multimarker_pose_sensor.launch">
+        <arg name="namespace" value="marker"/>
+    </include>
+
 
 </launch>
