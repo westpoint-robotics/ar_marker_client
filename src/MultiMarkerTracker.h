@@ -39,12 +39,27 @@ public:
   ar_track_alvar_msgs::AlvarMarker marker;
 };
 
+class PoseFilterData
+{
+public:
+  int index;
+  geometry_msgs::PoseStamped pose;
+};
+
 bool MarkerComparator(const MarkerFilterData& marker1, const MarkerFilterData& marker2)
 {
   // this is used for median filtering on pose stamped array
   // we filter pose stamped using z component only, altough other options are available
   // e.q. compare distance from origin
   return (marker1.marker.pose.pose.position.z < marker2.marker.pose.pose.position.z); 
+}
+
+bool PoseComparator(const PoseFilterData& pose1, const PoseFilterData& pose2)
+{
+  // this is used for median filtering on pose stamped array
+  // we filter pose stamped using z component only, altough other options are available
+  // e.q. compare distance from origin
+  return (pose1.pose.pose.position.z < pose2.pose.pose.position.z); 
 }
 
 
@@ -96,6 +111,7 @@ public:
     void setRateFiltTime(double time);
     void setMinMarkerDetection(int detection_number);
     void setAverageFilterParameters(int filter_size, double filter_threshold);
+    void setMedianFilterParameters(int filter_size);
 
     void eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix, double roll, double pitch, double yaw);
     void rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix, double &roll, double &pitch, double &yaw);
@@ -160,6 +176,10 @@ public:
     std::map<int, std::vector<MarkerFilterData> > marker_filter_data;
     std::map<int, int> filter_counter;
     std::map<int, bool> filter_data_ready;
+
+    std::vector<PoseFilterData> pose_filter_array;
+    int pose_filter_counter;
+    int pose_filter_size;
 
     std::vector<sensor_msgs::Imu> imu_array;
     int imu_array_index;

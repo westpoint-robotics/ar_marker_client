@@ -10,3 +10,4 @@ filter_const: 0.2
 use_optitrack_align: true
 average_filter_size: 5
 average_filter_threshold: 0.5
+median_filter_size: 5

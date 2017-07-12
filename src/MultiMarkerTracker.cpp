@@ -42,6 +42,8 @@ MultiMarkerTracker::MultiMarkerTracker() {
     average_filter_size = 5;
     average_filter_threshold = 1.0f;
 
+    pose_filter_size = 5;
+    pose_filter_counter = 0;
     uav_to_cam.setOrigin(tf::Vector3(uav2cam(0,3), uav2cam(1,3), uav2cam(2,3)));
     tf::Matrix3x3 tf3d;
     tf3d.setValue(uav2cam(0,0), uav2cam(0,1), uav2cam(0,2),
@@ -323,6 +325,10 @@ void MultiMarkerTracker::setFilterConst(double filter_const) {
 void MultiMarkerTracker::setAverageFilterParameters(int array_size, double filter_threshold) {
    this->average_filter_size = array_size;
    this->average_filter_threshold = filter_threshold;
+}
+
+void MultiMarkerTracker::setMedianFilterParameters(int array_size) {
+   this->pose_filter_size = array_size;
 }
 
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
@@ -890,42 +896,66 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position.point.z = uav_position.point.z / markers_detected;
 
     // median filter
+    PoseFilterData pose_data;
 
+    pose_data.pose.pose.position.x = uav_position.point.x;
+    pose_data.pose.pose.position.y = uav_position.point.y;
+    pose_data.pose.pose.position.z = uav_position.point.z;
+    
+    pose_data.pose.pose.orientation.x = quaternion.getX();
+    pose_data.pose.pose.orientation.y = quaternion.getY();
+    pose_data.pose.pose.orientation.z = quaternion.getZ();
+    pose_data.pose.pose.orientation.w = quaternion.getW();
+    pose_data.index = pose_filter_counter;
 
-
-
-    // pt1 filter;
-    uav_position_filtered.point.x = (1 - filt_const) * uav_position.point.x + filt_const * uav_position_filtered_old.point.x;
-    uav_position_filtered.point.y = (1 - filt_const) * uav_position.point.y + filt_const * uav_position_filtered_old.point.y;
-    uav_position_filtered.point.z = (1 - filt_const) * uav_position.point.z + filt_const * uav_position_filtered_old.point.z;
-
-    uav_position_filtered_old = uav_position_filtered;
-
-    geometry_msgs::TransformStamped pose_tf;
-    pose_tf.header.stamp = uav_position.header.stamp;
-    pose_tf.transform.translation.x = uav_position_filtered.point.x;
-    pose_tf.transform.translation.y = uav_position_filtered.point.y;
-    pose_tf.transform.translation.z = uav_position_filtered.point.z;
-
-    pose_tf.transform.rotation.x = quaternion.getX();
-    pose_tf.transform.rotation.y = quaternion.getY();
-    pose_tf.transform.rotation.z = quaternion.getZ();
-    pose_tf.transform.rotation.w = quaternion.getW();
-
-    if (use_optitrack_align) {
-      if (isAlignedMarkerWithOptitrack()) {
-        pub_target_pose.publish(uav_position);
-        pub_target_pose_f.publish(uav_position_filtered);
-        pub_target_transform.publish(pose_tf);
-      }
+    if (pose_filter_array.size() < pose_filter_size) {
+      pose_filter_array.push_back(pose_data);
+      pose_filter_counter = (pose_filter_counter + 1) % pose_filter_size;
     }
     else {
-        pub_target_pose.publish(uav_position);
-        pub_target_pose_f.publish(uav_position_filtered);
-        pub_target_transform.publish(pose_tf);
+        pose_filter_array[pose_filter_counter] = pose_data;
+        pose_filter_counter = (pose_filter_counter + 1) % pose_filter_size;
+
+        // perform median filtering
+        std::vector<PoseFilterData> sort_array = pose_filter_array;
+        std::sort(sort_array.begin(), sort_array.end(), PoseComparator);
+        pose_data = sort_array[(pose_filter_size / 2) + 1];
+
+
+        // pt1 filter;
+        uav_position_filtered.point.x = (1 - filt_const) * pose_data.pose.pose.position.x + filt_const * uav_position_filtered_old.point.x;
+        uav_position_filtered.point.y = (1 - filt_const) * pose_data.pose.pose.position.y + filt_const * uav_position_filtered_old.point.y;
+        uav_position_filtered.point.z = (1 - filt_const) * pose_data.pose.pose.position.z + filt_const * uav_position_filtered_old.point.z;
+
+        uav_position_filtered_old = uav_position_filtered;
+
+        geometry_msgs::TransformStamped pose_tf;
+        pose_tf.header.stamp = uav_position.header.stamp;
+        pose_tf.transform.translation.x = uav_position_filtered.point.x;
+        pose_tf.transform.translation.y = uav_position_filtered.point.y;
+        pose_tf.transform.translation.z = uav_position_filtered.point.z;
+
+        pose_tf.transform.rotation.x = pose_data.pose.pose.orientation.x;
+        pose_tf.transform.rotation.y = pose_data.pose.pose.orientation.y;
+        pose_tf.transform.rotation.z = pose_data.pose.pose.orientation.z;
+        pose_tf.transform.rotation.w = pose_data.pose.pose.orientation.w;;
+
+        if (use_optitrack_align) {
+          if (isAlignedMarkerWithOptitrack()) {
+            pub_target_pose.publish(uav_position);
+            pub_target_pose_f.publish(uav_position_filtered);
+            pub_target_transform.publish(pose_tf);
+          }
+        }
+        else {
+            pub_target_pose.publish(uav_position);
+            pub_target_pose_f.publish(uav_position_filtered);
+            pub_target_transform.publish(pose_tf);
+        }
+
+
+
     }
-
-
   }
 
   //ROS_INFO("Markers %d, filtered markers %d", markers_detected, filtered_markers_detected);
