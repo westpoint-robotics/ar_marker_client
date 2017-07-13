@@ -11,5 +11,5 @@ use_optitrack_align: true
 average_filter_size: 5
 average_filter_threshold: 0.75
 pose_filter_size: 5
-pose_filter_threshold: 0.35
+pose_filter_threshold: 0.35  
 

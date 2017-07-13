@@ -894,8 +894,8 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
       int counter = 0;
 
       while (true) {
-        average_x += pose_filter_array[index].pose.pose.position.x;
-        average_y += pose_filter_array[index].pose.pose.position.y;
+        //average_x += pose_filter_array[index].pose.pose.position.x;
+        //average_y += pose_filter_array[index].pose.pose.position.y;
         average_z += pose_filter_array[index].pose.pose.position.z;
         index = (index + 1 ) % pose_filter_size;
         counter++;
@@ -903,12 +903,11 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
           break;
       }
       if (counter > 0) {
-          average_x /= counter;
-          average_y /= counter;
+          //average_x /= counter;
+          //average_y /= counter;
           average_z /= counter;
-          double manhattan_norm_diff = fabs(pose_data.pose.pose.position.x - average_x) +
-                                       fabs(pose_data.pose.pose.position.y - average_y) +
-                                       fabs(pose_data.pose.pose.position.z - average_z);
+          double manhattan_norm_diff = fabs(pose_data.pose.pose.position.z - average_z);
+          
           if (manhattan_norm_diff < pose_filter_threshold) {
 
             pose_filter_array[pose_filter_counter] = pose_data;
