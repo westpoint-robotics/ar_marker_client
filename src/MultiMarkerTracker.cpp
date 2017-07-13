@@ -44,6 +44,8 @@ MultiMarkerTracker::MultiMarkerTracker() {
 
     pose_filter_size = 5;
     pose_filter_counter = 0;
+    pose_filter_threshold = 0.5f;
+
     uav_to_cam.setOrigin(tf::Vector3(uav2cam(0,3), uav2cam(1,3), uav2cam(2,3)));
     tf::Matrix3x3 tf3d;
     tf3d.setValue(uav2cam(0,0), uav2cam(0,1), uav2cam(0,2),
@@ -327,8 +329,9 @@ void MultiMarkerTracker::setAverageFilterParameters(int array_size, double filte
    this->average_filter_threshold = filter_threshold;
 }
 
-void MultiMarkerTracker::setMedianFilterParameters(int array_size) {
+void MultiMarkerTracker::setPoseAverageFilterParameters(int array_size, double threshold) {
    this->pose_filter_size = array_size;
+   this->pose_filter_threshold = threshold;
 }
 
 bool MultiMarkerTracker::isValidMarkerId(int marker_id) {
@@ -462,7 +465,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
       if (!filter_data_ready[marker.id]) {
          //ROS_INFO("Trying to add new marker filter data");
          marker_filter_data[marker.id].push_back(marker_data);
-         filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % MEDFILT_SIZE;
+         filter_counter[marker.id]  = (filter_counter[marker.id]  + 1) % average_filter_size;
          //ROS_INFO("Added marker filter data");
       }
       else {
@@ -471,7 +474,7 @@ void MultiMarkerTracker::extractMarkers(const ar_track_alvar_msgs::AlvarMarkers:
         // before adding new marker data, check for false positive
         // isolate false positives by comparing current marker z position with average z position of previous markers
 
-        double average_z;
+        double average_z = 0.0;
         int index = filter_counter[marker.id];
         int counter = 0;
 
@@ -752,30 +755,6 @@ void MultiMarkerTracker::addNewFrames() {
                                marker_z.push_back(marker_transforms[marker_ids[i]][j].getOrigin().getZ());
                             }
 
-                            // median filter on z component
-
-
-                            /*
-                            std::sort(marker_z.begin(), marker_z.end());
-                            medfilt_value = marker_z[0]; // marker_z[(int)(marker_z.size() / 2.0)];
-
-                            for (int j = 0; j < transform_samples_num; j++) {
-
-                                if (fabs(marker_transforms[marker_ids[i]][j].getOrigin().getZ()- medfilt_value) < 0.001) {
-                                    medfilt_value_index = j;
-                                    ROS_INFO("Marker %d med filt value %.2f index %d", i, medfilt_value,  medfilt_value_index);
-                                    break;
-                                }
-
-                            }
-
-
-
-
-                            marker_transform.setOrigin( marker_transforms[marker_ids[i]][medfilt_value_index].getOrigin());
-                            marker_transform.setRotation(marker_transforms[marker_ids[i]][medfilt_value_index].getRotation());
-                            */
-
                             marker_transform.setOrigin( position);
                             marker_transform.setRotation( rotation);
                             tf_broadcaster.sendTransform(tf::StampedTransform(marker_transform, ros::Time::now(), marker_frames[marker_base_frames[marker_ids[i]]].c_str(), marker_frames[marker_ids[i]].c_str()));
@@ -842,11 +821,6 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
 
               uav_to_base_marker_tf = optitrackToMarker * uav_to_base_marker_tf;
 
-              /*
-              uav_pose.pose.position.x += markerOffset[0];
-              uav_pose.pose.position.y += markerOffset[1];
-              uav_pose.pose.position.z += markerOffset[2];
-              */
             }
 
             uav_pose[marker_ids[i]].pose.position.x = uav_to_base_marker_tf.getOrigin().getX();
@@ -895,8 +869,8 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
     uav_position.point.y = uav_position.point.y / markers_detected;
     uav_position.point.z = uav_position.point.z / markers_detected;
 
-    // median filter
-    /*
+    // average like median filter
+    
     PoseFilterData pose_data;
 
     pose_data.pose.pose.position.x = uav_position.point.x;
@@ -914,46 +888,62 @@ void MultiMarkerTracker::estimateUavPoseFromMarkers() {
       pose_filter_counter = (pose_filter_counter + 1) % pose_filter_size;
     }
     else {
-        pose_filter_array[pose_filter_counter] = pose_data;
-        pose_filter_counter = (pose_filter_counter + 1) % pose_filter_size;
+      
+      double average_z = 0.0;
+      int index = pose_filter_counter;
+      int counter = 0;
 
-        // perform median filtering
-        std::vector<PoseFilterData> sort_array = pose_filter_array;
-        std::sort(sort_array.begin(), sort_array.end(), PoseComparator);
-        pose_data = sort_array[(pose_filter_size / 2) + 1];
-    }
-  }*/
-
-
-    // pt1 filter;
-    uav_position_filtered.point.x = (1 - filt_const) * uav_position.point.x + filt_const * uav_position_filtered_old.point.x;
-    uav_position_filtered.point.y = (1 - filt_const) * uav_position.point.y + filt_const * uav_position_filtered_old.point.y;
-    uav_position_filtered.point.z = (1 - filt_const) * uav_position.point.z + filt_const * uav_position_filtered_old.point.z;
-
-    uav_position_filtered_old = uav_position_filtered;
-
-    geometry_msgs::TransformStamped pose_tf;
-    pose_tf.header.stamp = uav_position.header.stamp;
-    pose_tf.transform.translation.x = uav_position_filtered.point.x;
-    pose_tf.transform.translation.y = uav_position_filtered.point.y;
-    pose_tf.transform.translation.z = uav_position_filtered.point.z;
-
-    pose_tf.transform.rotation.x = quaternion.getX();
-    pose_tf.transform.rotation.y = quaternion.getY();
-    pose_tf.transform.rotation.z = quaternion.getZ();
-    pose_tf.transform.rotation.w = quaternion.getW();
-
-    if (use_optitrack_align) {
-      if (isAlignedMarkerWithOptitrack()) {
-        pub_target_pose.publish(uav_position);
-        pub_target_pose_f.publish(uav_position_filtered);
-        pub_target_transform.publish(pose_tf);
+      while (true) {
+        average_z += pose_filter_array[index].pose.pose.position.z;
+        index = (index + 1 ) % pose_filter_size;
+        counter++;
+        if (index == pose_filter_counter)
+          break;
       }
-    }
-    else {
-        pub_target_pose.publish(uav_position);
-        pub_target_pose_f.publish(uav_position_filtered);
-        pub_target_transform.publish(pose_tf);
+      if (counter > 0) {
+          average_z /= counter;
+          if (fabs(pose_data.pose.pose.position.z - average_z) < pose_filter_threshold) {
+
+            pose_filter_array[pose_filter_counter] = pose_data;
+            pose_filter_counter = (pose_filter_counter + 1) % pose_filter_size;
+
+              // pt1 filter;
+            uav_position_filtered.point.x = (1 - filt_const) * pose_data.pose.pose.position.x + 
+                                            filt_const * uav_position_filtered_old.point.x;
+            uav_position_filtered.point.y = (1 - filt_const) * pose_data.pose.pose.position.y + 
+                                            filt_const * uav_position_filtered_old.point.y;
+            uav_position_filtered.point.z = (1 - filt_const) * pose_data.pose.pose.position.z +
+                                            filt_const * uav_position_filtered_old.point.z;
+            uav_position_filtered_old = uav_position_filtered;
+
+            geometry_msgs::TransformStamped pose_tf;
+            pose_tf.header.stamp = uav_position.header.stamp;
+            pose_tf.transform.translation.x = uav_position_filtered.point.x;
+            pose_tf.transform.translation.y = uav_position_filtered.point.y;
+            pose_tf.transform.translation.z = uav_position_filtered.point.z;
+
+            pose_tf.transform.rotation.x = quaternion.getX();
+            pose_tf.transform.rotation.y = quaternion.getY();
+            pose_tf.transform.rotation.z = quaternion.getZ();
+            pose_tf.transform.rotation.w = quaternion.getW();
+
+            if (use_optitrack_align) {
+              if (isAlignedMarkerWithOptitrack()) {
+                pub_target_pose.publish(uav_position);
+                pub_target_pose_f.publish(uav_position_filtered);
+                pub_target_transform.publish(pose_tf);
+              }
+            }
+            else {
+                pub_target_pose.publish(uav_position);
+                pub_target_pose_f.publish(uav_position_filtered);
+                pub_target_transform.publish(pose_tf);
+            }
+          }
+          else {
+            // ignoring current measurement
+          }
+      }
     }
   }
 }

@@ -111,7 +111,7 @@ public:
     void setRateFiltTime(double time);
     void setMinMarkerDetection(int detection_number);
     void setAverageFilterParameters(int filter_size, double filter_threshold);
-    void setMedianFilterParameters(int filter_size);
+    void setPoseAverageFilterParameters(int filter_size, double filter_threshold);
 
     void eulerRPYToRotationMaxtrix(Eigen::Matrix3d &rotationMatrix, double roll, double pitch, double yaw);
     void rotationMaxtrixToEulerRPY(Eigen::Matrix3d rotationMatrix, double &roll, double &pitch, double &yaw);
@@ -180,6 +180,7 @@ public:
     std::vector<PoseFilterData> pose_filter_array;
     int pose_filter_counter;
     int pose_filter_size;
+    double pose_filter_threshold;
 
     std::vector<sensor_msgs::Imu> imu_array;
     int imu_array_index;

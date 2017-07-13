@@ -24,7 +24,8 @@ int main(int argc, char **argv)
   double filt_const;
   double average_filter_threshold = 1.0;
   int average_filter_size = 5;
-  int median_filter_size = 5;
+  int pose_filter_size = 5;
+  double pose_filter_threshold = 0.5;
   std::string odometry_callback, cam2imuTf;
   std::string camera_frame;  // todo, add as a param
   std::vector<int> marker_ids;
@@ -54,7 +55,8 @@ int main(int argc, char **argv)
   private_node_handle_.param("filter_const", filt_const, 0.9);
   private_node_handle_.param("average_filter_size", average_filter_size, 5);
   private_node_handle_.param("average_filter_threshold", average_filter_threshold, 1.0);
-  private_node_handle_.param("median_filter_size", median_filter_size, 5);
+  private_node_handle_.param("pose_filter_size", pose_filter_size, 5);
+  private_node_handle_.param("pose_filter_threshold", pose_filter_threshold, 0.5);
 
 
 
@@ -65,7 +67,8 @@ int main(int argc, char **argv)
   }
 
   ROS_INFO("Parameters, %s, %s, %.2f, %.2f,  %d ", cam2imuTf.c_str(), camera_frame.c_str(), rate_filt_velocity, rate_filt_time, min_marker_detection);
-  ROS_INFO("Average filter parameters, %d, %.2f, median filter size %d", average_filter_size, average_filter_threshold, median_filter_size);
+  ROS_INFO("Average filter parameters, %d, %.2f, pose average filter parameters %d %.2f", 
+    average_filter_size, average_filter_threshold, pose_filter_size, pose_filter_threshold);
 
   //std::cout << "Marker offset (x,y,z) " << "(" << markerOffset[0] << ","<<markerOffset[1] << "," << markerOffset[2] << ")" << std::endl;
 
@@ -102,7 +105,7 @@ int main(int argc, char **argv)
   mtracker->setFilterConst(filt_const);
   mtracker->setMarkerTransformSampleNum(transform_sample_num);
   mtracker->setAverageFilterParameters(average_filter_size, average_filter_threshold);
-  mtracker->setMedianFilterParameters(median_filter_size);
+  mtracker->setPoseAverageFilterParameters(pose_filter_size, pose_filter_threshold);
   ROS_INFO("Initializing publisher.");
   mtracker->initUavPosePublishers(n);
 
