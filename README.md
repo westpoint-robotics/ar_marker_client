@@ -32,4 +32,11 @@ The parameters of the *multi_marker_tracker_node* node are set in [this yaml fil
   * ar_tracker/pose_f ([geometry_msgs::PointStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PointStamped.html)) - the filtered vehicle pose. This presents the measurement filtered by the average pose filter and the first order low pass filter.
   * ar_tracker/pose_tf ([geometry_msgs::TransformStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TransformStamped.html)) - the same as previous, just packed in the different message type required by [multi-sensor fusion node](https://github.com/westpoint-robotics/ethzasl_msf)
   * ar_tracker/marker0 ([geometry_msgs::PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html)) - the pose of the base marker in the camera frame (used for debugging purposes)
+  
+ ## Running code
+ To launch only multi-marker tracking node, use [this launch file](https://github.com/westpoint-robotics/ar_marker_client/blob/master/launch/multi_marker_tracker.launch). Make sure to remap the imu topic containing imu data of the flight controller unit being used.
+ 
+ Another launch file, which runs the camera node, ar_track_alvar node and multi-marker tracking node is given [here](https://github.com/westpoint-robotics/ar_marker_client/blob/master/launch/ar_alvar_camera_multi_marker_tracking.launch). Adjust the launch parameters important for ar_track_alvar node, namely, the size of each individual marker, the camera topic, the camera info topic and the frequency of measurements. The description of all ar_track_alvar node parameters is given on its  [wiki page](http://wiki.ros.org/ar_track_alvar).
+ 
+ If you are using a [multi-sensor fusion node](https://github.com/westpoint-robotics/ethzasl_msf) alongside this package, use [this launch file](https://github.com/westpoint-robotics/ar_marker_client/blob/master/launch/ar_alvar_camera_multi_marker_tracking_msf.launch) to run everything together.
     
